@@ -15,6 +15,8 @@
 
 #include "QGCCorePlugin.h"
 
+class CameraManagerPlugin;
+
 class QQmlApplicationEngine;
 
 Q_DECLARE_LOGGING_CATEGORY(CustomLog)
@@ -31,6 +33,7 @@ class CustomPlugin : public QGCCorePlugin
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
+    Q_PROPERTY(CameraManagerPlugin *cameraManager READ cameraManager CONSTANT FINAL)
 
 public:
     explicit CustomPlugin(QObject *parent = nullptr);
@@ -39,6 +42,7 @@ public:
     static QGCCorePlugin *instance();
 
     QVariantList servoButtons() const;
+    CameraManagerPlugin *cameraManager() const { return _cameraManager; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -70,4 +74,5 @@ private:
 
     CustomUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
+    CameraManagerPlugin *_cameraManager = nullptr;
 };

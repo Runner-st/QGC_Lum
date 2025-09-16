@@ -9,6 +9,7 @@
 
 #include "CustomPlugin.h"
 
+#include "CameraManagerPlugin.h"
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
 #include "MAVLinkProtocol.h"
@@ -37,6 +38,7 @@ Q_APPLICATION_STATIC(CustomPlugin, _customPluginInstance);
 CustomPlugin::CustomPlugin(QObject *parent)
     : QGCCorePlugin(parent)
 {
+    _cameraManager = new CameraManagerPlugin(this);
     _loadServoButtons();
 
     emit servoButtonsChanged();
