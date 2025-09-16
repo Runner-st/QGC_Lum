@@ -22,6 +22,14 @@ Item {
 
     readonly property real _margin: ScreenTools.defaultFontPixelWidth
     readonly property bool _hasVehicle: QGroundControl.multiVehicleManager.activeVehicle !== null
+    readonly property int _servoChannel: 9
+
+    function _sendServoPulse(pulseWidth) {
+        const activeVehicle = QGroundControl.multiVehicleManager.activeVehicle
+        if (activeVehicle) {
+            activeVehicle.sendServoCommand(_servoChannel, pulseWidth)
+        }
+    }
 
     QGCToolInsets {
         id: toolInsets
@@ -34,25 +42,43 @@ Item {
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
         topEdgeRightInset: parentToolInsets.topEdgeRightInset
-        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, triggerButton.visible ? triggerButton.height + (_margin * 2) : 0)
+        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, buttonRow.visible ? buttonRow.height + (_margin * 2) : 0)
         bottomEdgeCenterInset: parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset: parentToolInsets.bottomEdgeRightInset
     }
 
-    QGCButton {
-        id: triggerButton
-        text: "45"
+    Row {
+        id: buttonRow
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         anchors.margins: _margin
-        width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
-        height: ScreenTools.defaultFontPixelHeight * 2
-        enabled: _hasVehicle
-        onClicked: {
-            const activeVehicle = QGroundControl.multiVehicleManager.activeVehicle
-            if (activeVehicle) {
-                activeVehicle.sendServoCommand(5, 1500)
-            }
+        spacing: _margin / 2
+
+        QGCButton {
+            id: cam0Button
+            text: qsTr("Cam0")
+            width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+            height: ScreenTools.defaultFontPixelHeight * 2
+            enabled: _hasVehicle
+            onClicked: _sendServoPulse(990)
+        }
+
+        QGCButton {
+            id: cam45Button
+            text: qsTr("Cam45")
+            width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+            height: ScreenTools.defaultFontPixelHeight * 2
+            enabled: _hasVehicle
+            onClicked: _sendServoPulse(1500)
+        }
+
+        QGCButton {
+            id: cam90Button
+            text: qsTr("Cam90")
+            width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+            height: ScreenTools.defaultFontPixelHeight * 2
+            enabled: _hasVehicle
+            onClicked: _sendServoPulse(2000)
         }
     }
 }
