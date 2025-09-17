@@ -12,6 +12,7 @@ import QtQuick.Controls
 
 import QGroundControl
 import QGroundControl.Controls
+import QGroundControl.FlightDisplay
 
 Item {
     id: root
@@ -23,6 +24,9 @@ Item {
     readonly property real _margin: ScreenTools.defaultFontPixelWidth
     readonly property bool _hasVehicle: QGroundControl.multiVehicleManager.activeVehicle !== null
     readonly property bool _hasCorePlugin: QGroundControl.corePlugin !== null && QGroundControl.corePlugin !== undefined
+    readonly property var  _cameraManager: _hasCorePlugin ? QGroundControl.corePlugin.cameraManager : null
+    readonly property real _buttonInset: buttonFlow.visible ? buttonFlow.implicitHeight + (_margin * 2) : 0
+    readonly property real _secondaryInset: secondaryStreamsColumn.visible ? (_buttonInset + secondaryStreamsColumn.implicitHeight + _margin) : 0
 
     function _triggerServo(channel, pulseWidth) {
         if (!_hasVehicle || !_hasCorePlugin) {
@@ -43,9 +47,29 @@ Item {
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
         topEdgeRightInset: parentToolInsets.topEdgeRightInset
-        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, buttonFlow.visible ? buttonFlow.implicitHeight + (_margin * 2) : 0)
+        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, _buttonInset, _secondaryInset)
         bottomEdgeCenterInset: parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset: parentToolInsets.bottomEdgeRightInset
+    }
+
+    Column {
+        id: secondaryStreamsColumn
+        anchors.left: parent.left
+        anchors.bottom: buttonFlow.top
+        anchors.leftMargin: _margin
+        anchors.bottomMargin: _margin
+        spacing: _margin / 2
+        visible: _cameraManager && _cameraManager.secondaryStreamsVisible && _cameraManager.secondaryCameras.length > 0
+
+        Repeater {
+            model: secondaryStreamsColumn.visible ? _cameraManager.secondaryCameras : []
+
+            CameraStreamView {
+                streamIndex: modelData.index
+                streamName: modelData.name
+                cameraManager: _cameraManager
+            }
+        }
     }
 
     Flow {

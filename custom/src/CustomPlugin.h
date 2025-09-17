@@ -10,10 +10,12 @@
 #pragma once
 
 #include <QtCore/QList>
+#include <QtCore/QMetaObject>
 #include <QtCore/QVariantList>
 #include <QtQml/QQmlAbstractUrlInterceptor>
 
 #include "QGCCorePlugin.h"
+#include "CameraManagerPlugin.h"
 
 class QQmlApplicationEngine;
 
@@ -31,6 +33,7 @@ class CustomPlugin : public QGCCorePlugin
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
+    Q_PROPERTY(CameraManagerPlugin *cameraManager READ cameraManager CONSTANT FINAL)
 
 public:
     explicit CustomPlugin(QObject *parent = nullptr);
@@ -39,6 +42,7 @@ public:
     static QGCCorePlugin *instance();
 
     QVariantList servoButtons() const;
+    CameraManagerPlugin *cameraManager() const { return _cameraManager; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -70,4 +74,6 @@ private:
 
     CustomUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
+    CameraManagerPlugin *_cameraManager = nullptr;
+    QMetaObject::Connection _engineObjectCreatedConnection;
 };

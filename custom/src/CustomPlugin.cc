@@ -9,10 +9,12 @@
 
 #include "CustomPlugin.h"
 
+#include "CameraManagerPlugin.h"
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
 #include "MAVLinkProtocol.h"
 #include "Vehicle.h"
+#include "VideoManager.h"
 
 #include "QGCMAVLink.h"
 
@@ -24,7 +26,9 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QVariantMap>
+#include <QtCore/QUrl>
 #include <QtQml/QQmlApplicationEngine>
+#include <QtQuick/QQuickWindow>
 
 #include <array>
 #include <cstdint>
@@ -37,6 +41,7 @@ Q_APPLICATION_STATIC(CustomPlugin, _customPluginInstance);
 CustomPlugin::CustomPlugin(QObject *parent)
     : QGCCorePlugin(parent)
 {
+    _cameraManager = new CameraManagerPlugin(this);
     _loadServoButtons();
 
     emit servoButtonsChanged();
@@ -175,7 +180,41 @@ QQmlApplicationEngine *CustomPlugin::createQmlApplicationEngine(QObject *parent)
     _qmlEngine = QGCCorePlugin::createQmlApplicationEngine(parent);
     if (!_urlInterceptor) {
         _urlInterceptor = new CustomUrlInterceptor();
+    }
+
+    if (_qmlEngine && _urlInterceptor) {
         _qmlEngine->addUrlInterceptor(_urlInterceptor);
+
+        if (_engineObjectCreatedConnection) {
+            QObject::disconnect(_engineObjectCreatedConnection);
+            _engineObjectCreatedConnection = {};
+        }
+
+        _engineObjectCreatedConnection = connect(
+            _qmlEngine,
+            &QQmlApplicationEngine::objectCreated,
+            this,
+            [this](QObject *object, const QUrl &)
+            {
+                if (!object) {
+                    return;
+                }
+
+                QQuickWindow *window = qobject_cast<QQuickWindow *>(object);
+                if (!window) {
+                    window = object->findChild<QQuickWindow *>();
+                }
+
+                if (!window) {
+                    return;
+                }
+
+                VideoManager::instance()->init(window);
+
+                QObject::disconnect(_engineObjectCreatedConnection);
+                _engineObjectCreatedConnection = {};
+            },
+            Qt::QueuedConnection);
     }
 
     return _qmlEngine;
@@ -185,6 +224,11 @@ void CustomPlugin::cleanup()
 {
     if (_qmlEngine && _urlInterceptor) {
         _qmlEngine->removeUrlInterceptor(_urlInterceptor);
+    }
+
+    if (_engineObjectCreatedConnection) {
+        QObject::disconnect(_engineObjectCreatedConnection);
+        _engineObjectCreatedConnection = {};
     }
 
     delete _urlInterceptor;
