@@ -13,6 +13,7 @@
 #include "QGCCorePlugin.h"
 #include "QGCLoggingCategory.h"
 #include "SettingsManager.h"
+#include "VideoReceiver.h"
 #include "VideoSettings.h"
 
 #include <algorithm>
@@ -343,6 +344,8 @@ void CameraManagerPlugin::_load()
     if (_cameras.isEmpty()) {
         _primaryIndex = -1;
     } else {
+        const int maxIndex = static_cast<int>(_cameras.size() - 1);
+        _primaryIndex = std::clamp(storedPrimary, 0, maxIndex);
         _primaryIndex = std::clamp(storedPrimary, 0, _cameras.size() - 1);
     }
 
