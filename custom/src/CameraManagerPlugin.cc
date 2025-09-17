@@ -345,9 +345,7 @@ void CameraManagerPlugin::_load()
         _primaryIndex = -1;
     } else {
         const int maxIndex = static_cast<int>(_cameras.size() - 1);
-
         _primaryIndex = qBound(0, storedPrimary, maxIndex);
-
     }
 
     emit primaryIndexChanged();
