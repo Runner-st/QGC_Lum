@@ -321,7 +321,7 @@ void CameraManagerPlugin::_load()
         const QJsonDocument document = QJsonDocument::fromJson(raw.toUtf8());
         if (document.isArray()) {
             const QJsonArray array = document.array();
-            _cameras.reserve(array.size());
+
             for (const QJsonValue &value : array) {
                 if (!value.isObject()) {
                     continue;
@@ -345,8 +345,9 @@ void CameraManagerPlugin::_load()
         _primaryIndex = -1;
     } else {
         const int maxIndex = static_cast<int>(_cameras.size() - 1);
-        _primaryIndex = std::clamp(storedPrimary, 0, maxIndex);
-        _primaryIndex = std::clamp(storedPrimary, 0, _cameras.size() - 1);
+
+        _primaryIndex = qBound(0, storedPrimary, maxIndex);
+
     }
 
     emit primaryIndexChanged();
@@ -356,7 +357,7 @@ void CameraManagerPlugin::_load()
 void CameraManagerPlugin::_save() const
 {
     QJsonArray array;
-    array.reserve(_cameras.size());
+
     for (const CameraEntry &entry : _cameras) {
         QJsonObject object;
         object.insert(QStringLiteral("name"), entry.name);
