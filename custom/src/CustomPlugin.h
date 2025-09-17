@@ -14,6 +14,7 @@
 #include <QtQml/QQmlAbstractUrlInterceptor>
 
 #include "QGCCorePlugin.h"
+#include "CameraManagerPlugin.h"
 
 class CameraManagerPlugin;
 
