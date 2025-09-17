@@ -2,6 +2,8 @@
 list(APPEND CUSTOM_SOURCES
     ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.cc
     ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.h
+    ${CMAKE_SOURCE_DIR}/custom/src/CameraManagerPlugin.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/CameraManagerPlugin.h
 )
 
 # QML файл плагіна

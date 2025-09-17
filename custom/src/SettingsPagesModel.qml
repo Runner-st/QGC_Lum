@@ -70,6 +70,13 @@ ListModel {
     }
 
     ListElement {
+        name: qsTr("Camera manager")
+        url: "qrc:/Custom/qml/QGroundControl/AppSettings/CameraManagerSettings.qml"
+        iconUrl: "qrc:/Custom/res/camera_toggle_on.svg"
+        pageVisible: function() { return true }
+    }
+
+    ListElement {
         name: qsTr("Maps")
         url: "qrc:/qml/QGroundControl/AppSettings/MapSettings.qml"
         iconUrl: "qrc:/InstrumentValueIcons/globe.svg"
