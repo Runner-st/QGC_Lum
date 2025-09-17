@@ -8,11 +8,14 @@ set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .q
 set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomPlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CameraManagerPlugin.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CameraManagerPlugin.h
     CACHE INTERNAL "" FORCE
 )
 
 set(CUSTOM_LIBRARIES
     Qt6::Core
+    Qt6::Quick
     CACHE INTERNAL "" FORCE
 )
 
