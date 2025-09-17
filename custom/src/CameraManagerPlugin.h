@@ -11,10 +11,10 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QPointer>
-#include <QtCore/QVector>
 #include <QtCore/QVariantList>
 
 #include <memory>
+#include <vector>
 
 class QQuickItem;
 class VideoReceiver;
@@ -38,7 +38,7 @@ public:
     QVariantList secondaryCameras() const;
     int primaryIndex() const { return _primaryIndex; }
     bool secondaryStreamsVisible() const { return _secondaryStreamsVisible; }
-    bool hasCameras() const { return !_cameras.isEmpty(); }
+    bool hasCameras() const { return !_cameras.empty(); }
     bool hasSecondaryStreams() const { return _cameras.size() > 1; }
 
     Q_INVOKABLE void addCamera(const QString &name, const QString &url);
@@ -84,7 +84,7 @@ private:
     CameraEntry *_entryForIndex(int index);
     const CameraEntry *_entryForIndex(int index) const;
 
-    QVector<CameraEntry> _cameras;
+    std::vector<CameraEntry> _cameras;
     int _primaryIndex = -1;
     bool _secondaryStreamsVisible = false;
     VideoSettings *_videoSettings = nullptr;

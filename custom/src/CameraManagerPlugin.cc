@@ -28,7 +28,9 @@
 #include <QtCore/QtGlobal>
 #include <QtQuick/QQuickItem>
 
+#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 QGC_LOGGING_CATEGORY(CustomCameraManagerLog, "gcs.custom.cameramanager")
 
@@ -63,10 +65,11 @@ CameraManagerPlugin::~CameraManagerPlugin()
 QVariantList CameraManagerPlugin::cameras() const
 {
     QVariantList result;
-    result.reserve(_cameras.size());
+    const int cameraCount = static_cast<int>(_cameras.size());
+    result.reserve(cameraCount);
 
-    for (int index = 0; index < _cameras.size(); ++index) {
-        const CameraEntry &entry = _cameras.at(index);
+    for (int index = 0; index < cameraCount; ++index) {
+        const CameraEntry &entry = _cameras.at(static_cast<std::size_t>(index));
         QVariantMap map;
         map.insert(QStringLiteral("name"), entry.name);
         map.insert(QStringLiteral("url"), entry.url);
@@ -81,13 +84,15 @@ QVariantList CameraManagerPlugin::cameras() const
 QVariantList CameraManagerPlugin::secondaryCameras() const
 {
     QVariantList result;
-    result.reserve(_cameras.size());
+    const int cameraCount = static_cast<int>(_cameras.size());
+    result.reserve(cameraCount);
 
-    for (int index = 0; index < _cameras.size(); ++index) {
+    for (int index = 0; index < cameraCount; ++index) {
         if (index == _primaryIndex) {
             continue;
         }
-        const CameraEntry &entry = _cameras.at(index);
+        const CameraEntry &entry = _cameras.at(static_cast<std::size_t>(index));
+
         QVariantMap map;
         map.insert(QStringLiteral("name"), entry.name);
         map.insert(QStringLiteral("url"), entry.url);
@@ -110,10 +115,11 @@ void CameraManagerPlugin::addCamera(const QString &name, const QString &url)
     CameraEntry entry;
     entry.name = trimmedName;
     entry.url = trimmedUrl;
-    _cameras.append(std::move(entry));
+    _cameras.push_back(std::move(entry));
 
     if (_primaryIndex < 0) {
-        _primaryIndex = _cameras.size() - 1;
+        _primaryIndex = static_cast<int>(_cameras.size()) - 1;
+
         emit primaryIndexChanged();
     }
 
@@ -157,13 +163,14 @@ void CameraManagerPlugin::updateCamera(int index, const QString &name, const QSt
 
 void CameraManagerPlugin::removeCamera(int index)
 {
-    if (index < 0 || index >= _cameras.size()) {
+
+    if (index < 0 || index >= static_cast<int>(_cameras.size())) {
         qCWarning(CustomCameraManagerLog) << "Attempted to remove invalid camera index" << index;
         return;
     }
 
-    _destroyReceiver(_cameras[index]);
-    _cameras.removeAt(index);
+    _destroyReceiver(_cameras[static_cast<std::size_t>(index)]);
+    _cameras.erase(_cameras.begin() + static_cast<std::size_t>(index));
 
     if (_primaryIndex == index) {
         _primaryIndex = -1;
@@ -321,7 +328,6 @@ void CameraManagerPlugin::_load()
         const QJsonDocument document = QJsonDocument::fromJson(raw.toUtf8());
         if (document.isArray()) {
             const QJsonArray array = document.array();
-
             for (const QJsonValue &value : array) {
                 if (!value.isObject()) {
                     continue;
@@ -334,17 +340,17 @@ void CameraManagerPlugin::_load()
                 if (entry.name.isEmpty() || entry.url.isEmpty()) {
                     continue;
                 }
-                _cameras.append(entry);
+                _cameras.push_back(std::move(entry));
             }
         } else {
             qCWarning(CustomCameraManagerLog) << "Camera settings payload is not an array";
         }
     }
 
-    if (_cameras.isEmpty()) {
+    if (_cameras.empty()) {
         _primaryIndex = -1;
     } else {
-        const int maxIndex = static_cast<int>(_cameras.size() - 1);
+        const int maxIndex = static_cast<int>(_cameras.size()) - 1;
         _primaryIndex = qBound(0, storedPrimary, maxIndex);
     }
 
@@ -355,7 +361,6 @@ void CameraManagerPlugin::_load()
 void CameraManagerPlugin::_save() const
 {
     QJsonArray array;
-
     for (const CameraEntry &entry : _cameras) {
         QJsonObject object;
         object.insert(QStringLiteral("name"), entry.name);
@@ -372,15 +377,15 @@ void CameraManagerPlugin::_save() const
 
 void CameraManagerPlugin::_ensurePrimaryValid()
 {
-    if (_cameras.isEmpty()) {
+    if (_cameras.empty()) {
         if (_primaryIndex != -1) {
             _primaryIndex = -1;
             emit primaryIndexChanged();
         }
         return;
     }
+    if (_primaryIndex < 0 || _primaryIndex >= static_cast<int>(_cameras.size())) {
 
-    if (_primaryIndex < 0 || _primaryIndex >= _cameras.size()) {
         _primaryIndex = 0;
         emit primaryIndexChanged();
     }
@@ -392,13 +397,14 @@ void CameraManagerPlugin::_updateMainStream()
         return;
     }
 
-    if (_primaryIndex < 0 || _primaryIndex >= _cameras.size()) {
+    if (_primaryIndex < 0 || _primaryIndex >= static_cast<int>(_cameras.size())) {
+
         _videoSettings->streamEnabled()->setRawValue(false);
         _videoSettings->videoSource()->setRawValue(VideoSettings::videoDisabled);
         return;
     }
+    const CameraEntry &entry = _cameras.at(static_cast<std::size_t>(_primaryIndex));
 
-    const CameraEntry &entry = _cameras.at(_primaryIndex);
     _videoSettings->videoSource()->setRawValue(VideoSettings::videoSourceRTSP);
     _videoSettings->rtspUrl()->setRawValue(entry.url);
     _videoSettings->streamEnabled()->setRawValue(true);
@@ -406,8 +412,10 @@ void CameraManagerPlugin::_updateMainStream()
 
 void CameraManagerPlugin::_updateSecondaryReceivers()
 {
-    for (int index = 0; index < _cameras.size(); ++index) {
-        CameraEntry &entry = _cameras[index];
+    const int cameraCount = static_cast<int>(_cameras.size());
+    for (int index = 0; index < cameraCount; ++index) {
+        CameraEntry &entry = _cameras[static_cast<std::size_t>(index)];
+
         if (index == _primaryIndex || !_secondaryStreamsVisible) {
             _stopReceiver(entry);
             continue;
@@ -486,7 +494,7 @@ void CameraManagerPlugin::_createReceiver(CameraEntry &entry)
             return;
         }
 
-        CameraEntry &entry = _cameras[index];
+        CameraEntry &entry = _cameras[static_cast<std::size_t>(index)];
         if (entry.sink) {
             receiver->startDecoding(entry.sink);
         }
@@ -511,8 +519,8 @@ void CameraManagerPlugin::_createReceiver(CameraEntry &entry)
             if (innerIndex < 0 || innerIndex == _primaryIndex || !_secondaryStreamsVisible) {
                 return;
             }
+            CameraEntry &entry = _cameras[static_cast<std::size_t>(innerIndex)];
 
-            CameraEntry &entry = _cameras[innerIndex];
             if (entry.sink && entry.widget) {
                 _startReceiver(entry);
             }
@@ -582,9 +590,9 @@ int CameraManagerPlugin::_indexForReceiver(VideoReceiver *receiver) const
     if (!receiver) {
         return -1;
     }
-
-    for (int index = 0; index < _cameras.size(); ++index) {
-        const CameraEntry &entry = _cameras.at(index);
+    const int cameraCount = static_cast<int>(_cameras.size());
+    for (int index = 0; index < cameraCount; ++index) {
+        const CameraEntry &entry = _cameras.at(static_cast<std::size_t>(index));
         if (entry.receiver.get() == receiver) {
             return index;
         }
@@ -595,18 +603,18 @@ int CameraManagerPlugin::_indexForReceiver(VideoReceiver *receiver) const
 
 CameraManagerPlugin::CameraEntry *CameraManagerPlugin::_entryForIndex(int index)
 {
-    if (index < 0 || index >= _cameras.size()) {
+    if (index < 0 || index >= static_cast<int>(_cameras.size())) {
         return nullptr;
     }
 
-    return &_cameras[index];
+    return &_cameras[static_cast<std::size_t>(index)];
 }
 
 const CameraManagerPlugin::CameraEntry *CameraManagerPlugin::_entryForIndex(int index) const
 {
-    if (index < 0 || index >= _cameras.size()) {
+    if (index < 0 || index >= static_cast<int>(_cameras.size())) {
         return nullptr;
     }
 
-    return &_cameras[index];
+    return &_cameras[static_cast<std::size_t>(index)];
 }
