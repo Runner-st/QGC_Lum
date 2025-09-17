@@ -264,6 +264,7 @@ QString QGroundControlQmlGlobal::qgcVersion(void)
     }
     return versionStr;
 }
+#endif
 
 QString QGroundControlQmlGlobal::qgcAppDate()
 {
