@@ -16,8 +16,6 @@
 #include "QGCCorePlugin.h"
 #include "CameraManagerPlugin.h"
 
-class CameraManagerPlugin;
-
 class QQmlApplicationEngine;
 
 Q_DECLARE_LOGGING_CATEGORY(CustomLog)
