@@ -15,6 +15,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QTimer>
 #include <QtCore/QTranslator>
+#include <QtCore/QMetaObject>
 #include <QtWidgets/QApplication>
 
 namespace QGCCommandLineParser {
@@ -165,6 +166,7 @@ private:
     bool _showErrorsInToolbar = false;
     QElapsedTimer _msecsElapsedTime;
     bool _videoManagerInitialized = false;
+    QMetaObject::Connection _videoInitConnection;
 
     QList<QPair<QString /* title */, QString /* message */>> _delayedAppMessages;
 
