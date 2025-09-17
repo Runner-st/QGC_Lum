@@ -10,6 +10,7 @@
 #pragma once
 
 #include <QtCore/QList>
+#include <QtCore/QMetaObject>
 #include <QtCore/QVariantList>
 #include <QtQml/QQmlAbstractUrlInterceptor>
 
@@ -74,4 +75,5 @@ private:
     CustomUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
     CameraManagerPlugin *_cameraManager = nullptr;
+    QMetaObject::Connection _engineObjectCreatedConnection;
 };
