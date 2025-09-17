@@ -75,6 +75,3 @@ private:
     QQmlApplicationEngine *_qmlEngine = nullptr;
     CameraManagerPlugin *_cameraManager = nullptr;
 };
-
-};
-
