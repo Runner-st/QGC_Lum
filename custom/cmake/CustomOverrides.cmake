@@ -2,6 +2,7 @@
 list(APPEND CUSTOM_SOURCES
     ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.cc
     ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.h
+    ${CMAKE_SOURCE_DIR}/custom/src/QGroundControlQmlGlobalCustom.cc
 )
 
 # QML файл плагіна

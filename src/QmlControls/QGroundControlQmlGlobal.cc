@@ -40,6 +40,7 @@
 
 #include <QtCore/QSettings>
 #include <QtCore/QLineF>
+#include <QtCore/QCoreApplication>
 
 QGC_LOGGING_CATEGORY(GuidedActionsControllerLog, "GuidedActionsControllerLog")
 
@@ -252,19 +253,32 @@ void QGroundControlQmlGlobal::setFlightMapZoom(double zoom)
     }
 }
 
+#ifndef QGC_CUSTOM_BUILD
 QString QGroundControlQmlGlobal::qgcVersion(void)
 {
     QString versionStr = QCoreApplication::applicationVersion();
-    if(QSysInfo::buildAbi().contains("32"))
-    {
+    if (QSysInfo::buildAbi().contains("32")) {
         versionStr += QStringLiteral(" %1").arg(tr("32 bit"));
-    }
-    else if(QSysInfo::buildAbi().contains("64"))
-    {
+    } else if (QSysInfo::buildAbi().contains("64")) {
         versionStr += QStringLiteral(" %1").arg(tr("64 bit"));
     }
     return versionStr;
 }
+
+QString QGroundControlQmlGlobal::qgcAppDate()
+{
+    return QString::fromLatin1(QGC_APP_DATE);
+}
+
+bool QGroundControlQmlGlobal::qgcDailyBuild()
+{
+#ifdef QGC_DAILY_BUILD
+    return true;
+#else
+    return false;
+#endif
+}
+#endif
 
 QString QGroundControlQmlGlobal::altitudeModeExtraUnits(AltMode altMode)
 {

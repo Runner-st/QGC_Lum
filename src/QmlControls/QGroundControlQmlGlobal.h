@@ -223,12 +223,8 @@ public:
     QString telemetryFileExtension  (void) const;
 
     static QString qgcVersion();
-    static QString qgcAppDate() { return QGC_APP_DATE; }
-#ifdef QGC_DAILY_BUILD
-    static bool qgcDailyBuild() { return true; }
-#else
-    static bool qgcDailyBuild() { return false; }
-#endif
+    static QString qgcAppDate();
+    static bool qgcDailyBuild();
 
 #ifdef QGC_UTM_ADAPTER
     UTMSPManager* utmspManager() {return _utmspManager;}
