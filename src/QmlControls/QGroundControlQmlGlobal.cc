@@ -40,6 +40,7 @@
 
 #include <QtCore/QSettings>
 #include <QtCore/QLineF>
+#include <QtCore/QCoreApplication>
 
 QGC_LOGGING_CATEGORY(GuidedActionsControllerLog, "GuidedActionsControllerLog")
 
@@ -252,6 +253,7 @@ void QGroundControlQmlGlobal::setFlightMapZoom(double zoom)
     }
 }
 
+#ifndef QGC_CUSTOM_BUILD
 QString QGroundControlQmlGlobal::qgcVersion(void)
 {
     QString versionStr = QCoreApplication::applicationVersion();
@@ -265,6 +267,7 @@ QString QGroundControlQmlGlobal::qgcVersion(void)
     }
     return versionStr;
 }
+#endif
 
 QString QGroundControlQmlGlobal::altitudeModeExtraUnits(AltMode altMode)
 {
