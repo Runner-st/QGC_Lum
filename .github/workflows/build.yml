@@ -15,10 +15,10 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.8.2
+      - name: Install Qt 6.7.2
         uses: jurplel/install-qt-action@v3
         with:
-          version: 6.8.2
+          version: 6.7.2
           host: windows
           arch: win64_msvc2019_64
           modules: 'qtbase qtdeclarative qtmultimedia qtserialport qtlocation'
@@ -45,10 +45,10 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.8.2
+      - name: Install Qt 6.7.2
         uses: jurplel/install-qt-action@v3
         with:
-          version: 6.8.2
+          version: 6.7.2
           host: linux
           modules: 'qtbase qtdeclarative qtmultimedia qtserialport qtlocation'
 
