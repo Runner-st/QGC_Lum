@@ -1,0 +1,104 @@
+name: QGC_Lum Builds
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # запуск при пуші тегів vX.Y.Z
+  workflow_dispatch:  # можливість ручного запуску вручну
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install Qt 6.8.3
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: 6.8.3
+          host: windows
+          arch: win64_msvc2019_64
+          modules: 'qtbase qtdeclarative qtmultimedia qtserialport qtlocation'
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Build installer
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DQGC_INSTALLER=ON
+          cmake --build build --config Release --target package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QGC_Lum-Windows
+          path: build/package/*.exe
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install Qt 6.8.3
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: 6.8.3
+          host: linux
+          modules: 'qtbase qtdeclarative qtmultimedia qtserialport qtlocation'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev patchelf
+
+      - name: Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+          cmake --install build --prefix AppDir/usr
+
+      - name: Build AppImage
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --executable AppDir/usr/bin/qgroundcontrol \
+            --desktop-file deploy/qgroundcontrol.desktop \
+            --icon-file deploy/icons/qgroundcontrol.png \
+            --output appimage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QGC_Lum-Linux
+          path: ./*.AppImage
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [windows, linux]
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: QGC_Lum-Windows
+          path: artifacts
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: QGC_Lum-Linux
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
