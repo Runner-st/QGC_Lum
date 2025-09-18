@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"   # запуск при пуші тегів vX.Y.Z
-  workflow_dispatch:  # можливість ручного запуску вручну
+  workflow_dispatch:  # ручний запуск
 
 jobs:
   windows:
@@ -15,13 +15,13 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.7.2 + Charts
+      - name: Install Qt 6.7.2 + required modules
         uses: jurplel/install-qt-action@v3
         with:
           version: 6.7.2
           host: windows
           arch: win64_msvc2019_64
-          modules: 'qtcharts qt5compat'
+          modules: 'qtcharts qt5compat qtlocation qtmultimedia qtsensors qtspeech qtsvg qtwebsockets qtpositioning'
 
       - name: Install NSIS
         run: choco install nsis -y
@@ -45,12 +45,12 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.7.2 + Charts
+      - name: Install Qt 6.7.2 + required modules
         uses: jurplel/install-qt-action@v3
         with:
           version: 6.7.2
           host: linux
-          modules: 'qtcharts qt5compat'
+          modules: 'qtcharts qt5compat qtlocation qtmultimedia qtsensors qtspeech qtsvg qtwebsockets qtpositioning'
 
       - name: Install dependencies
         run: |
