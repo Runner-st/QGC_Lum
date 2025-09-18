@@ -15,12 +15,13 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.7.2
+      - name: Install Qt 6.7.2 + Charts
         uses: jurplel/install-qt-action@v3
         with:
           version: 6.7.2
           host: windows
           arch: win64_msvc2019_64
+          modules: 'qtcharts'
 
       - name: Install NSIS
         run: choco install nsis -y
@@ -44,11 +45,12 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Install Qt 6.7.2
+      - name: Install Qt 6.7.2 + Charts
         uses: jurplel/install-qt-action@v3
         with:
           version: 6.7.2
           host: linux
+          modules: 'qtcharts'
 
       - name: Install dependencies
         run: |
