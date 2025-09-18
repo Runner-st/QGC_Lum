@@ -104,7 +104,6 @@ Rectangle {
 
     //-------------------------------------------------------------------------
     //-- Toolbar Logos
-    Item {
         id:                     rightLogosRow
         anchors.right:          parent.right
         anchors.top:            parent.top
@@ -145,6 +144,7 @@ Rectangle {
 
         Image {
             id:                 brandImage
+
             anchors.right:      parent.right
             anchors.top:        parent.top
             anchors.bottom:     parent.bottom
