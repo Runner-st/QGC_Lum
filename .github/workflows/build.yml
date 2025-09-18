@@ -26,12 +26,21 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
-      - name: Install GStreamer SDK
-        run: choco install gstreamer-devel -y
-
-      - name: Build installer
+      - name: Install dependencies
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DQGC_INSTALLER=ON -DCMAKE_PREFIX_PATH="C:/gstreamer/1.0/msvc_x86_64"
+          choco install -y ninja cmake git ccache
+          choco install -y gstreamer gstreamer-devel
+
+      - name: Verify GStreamer installation
+        run: |
+          dir "C:\gstreamer\1.0\msvc_x86_64"
+          dir "C:\gstreamer\1.0\msvc_x86_64\lib\cmake"
+
+      - name: Build QGC installer (Release)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DQGC_INSTALLER=ON ^
+            -DGSTREAMER_ROOT=C:/gstreamer/1.0/msvc_x86_64 ^
+            -DCMAKE_PREFIX_PATH="C:/gstreamer/1.0/msvc_x86_64/lib/cmake/gstreamer-1.0"
           cmake --build build --config Release --target package
 
       - name: Upload artifact
