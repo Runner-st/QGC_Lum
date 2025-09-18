@@ -7,7 +7,7 @@
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
     </qresource>
     <qresource prefix="/Custom/res">
-        <file alias="SpiderLogo.svg">resources/SpiderLogo.svg</file>
-        <file alias="AntLogo.svg">resources/AntLogo.svg</file>
+        <file alias="SpiderLogo.svg">res/SpiderLogo.svg</file>
+        <file alias="AntLogo.svg">res/AntLogo.svg</file>
     </qresource>
 </RCC>
