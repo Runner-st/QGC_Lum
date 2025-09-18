@@ -26,8 +26,11 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
-      - name: Install GStreamer
+      - name: Install GStreamer SDK
         run: choco install gstreamer-devel -y
+
+      - name: Set GStreamer env vars
+        run: echo "CMAKE_PREFIX_PATH=C:/gstreamer/1.0/msvc_x86_64" >> $env:GITHUB_ENV
 
       - name: Build installer
         run: |
@@ -58,9 +61,16 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev patchelf
-          sudo apt-get install -y gstreamer1.0* libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev \
-            libgstreamer-plugins-bad1.0-dev libgstreamer-plugins-ugly1.0-dev
+          sudo apt-get install -y libgl1-mesa-dev patchelf \
+            gstreamer1.0-tools gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly gstreamer1.0-libav \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer-plugins-good1.0-dev \
+            libgstreamer-plugins-bad1.0-dev \
+            libgstreamer-plugins-ugly1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            libgstreamer1.0-dev
 
       - name: Build
         run: |
