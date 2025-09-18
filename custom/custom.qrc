@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/Custom/qml">
+        <file alias="QGroundControl/MainWindow.qml">src/MainWindow.qml</file>
         <file alias="QGroundControl/AppSettings/ServoControlSettings.qml">src/ServoControlSettings.qml</file>
         <file alias="QGroundControl/AppSettings/SettingsPagesModel.qml">src/SettingsPagesModel.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
