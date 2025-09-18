@@ -31,17 +31,28 @@ jobs:
           choco install -y ninja cmake git ccache
           choco install -y gstreamer gstreamer-devel
 
-      - name: Verify GStreamer installation
-        run: |
-          dir "C:\gstreamer\1.0\msvc_x86_64"
-          dir "C:\gstreamer\1.0\msvc_x86_64\lib\cmake"
+      - name: Locate GStreamer
+          id: gst
+          shell: pwsh
+          run: |
+            # шукаємо директорію де лежить GStreamer
+            $gstRoot = Get-ChildItem -Directory "C:\*" -Recurse -ErrorAction SilentlyContinue `
+                        | Where-Object { $_.FullName -like "*gstreamer\1.0\msvc_x86_64" } `
+                        | Select-Object -First 1
 
-      - name: Build QGC installer (Release)
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DQGC_INSTALLER=ON ^
-            -DGSTREAMER_ROOT=C:/gstreamer/1.0/msvc_x86_64 ^
-            -DCMAKE_PREFIX_PATH="C:/gstreamer/1.0/msvc_x86_64/lib/cmake/gstreamer-1.0"
-          cmake --build build --config Release --target package
+            if (-not $gstRoot) {
+              Write-Error "Не знайшов GStreamer!"
+              exit 1
+            }
+
+            echo "GSTREAMER_ROOT=$($gstRoot.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            echo "CMAKE_PREFIX_PATH=$($gstRoot.FullName)\lib\cmake\gstreamer-1.0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+       - name: Configure CMake
+          run: |
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DQGC_INSTALLER=ON `
+              -DGSTREAMER_ROOT="${{ env.GSTREAMER_ROOT }}" `
+              -DCMAKE_PREFIX_PATH="${{ env.CMAKE_PREFIX_PATH }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
