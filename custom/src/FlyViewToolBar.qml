@@ -104,7 +104,6 @@ Rectangle {
 
     //-------------------------------------------------------------------------
     //-- Toolbar Logos
-    Row {
         id:                     rightLogosRow
         anchors.right:          parent.right
         anchors.top:            parent.top
@@ -112,31 +111,43 @@ Rectangle {
         anchors.rightMargin:    _rightLogoMargin
         anchors.topMargin:      _rightLogoMargin
         anchors.bottomMargin:   _rightLogoMargin
-        spacing:                _rightLogoSpacing
+        implicitWidth:          logosRow.implicitWidth + (brandImage.visible ? brandImage.width + _rightLogoSpacing : 0)
+        width:                  implicitWidth
         visible:                x > (toolsFlickable.x + toolsFlickable.contentWidth + ScreenTools.defaultFontPixelWidth)
 
-        Image {
-            id:         spiderLogo
-            width:      height
-            height:     parent.height
-            fillMode:   Image.PreserveAspectFit
-            source:     "qrc:/Custom/res/SpiderLogo.svg"
-            mipmap:     true
-        }
+        Row {
+            id:                     logosRow
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right:          brandImage.visible ? brandImage.left : parent.right
+            anchors.rightMargin:    brandImage.visible ? _rightLogoSpacing : 0
+            height:                 parent.height
+            spacing:                _rightLogoSpacing
 
-        Image {
-            id:         antLogo
-            width:      height
-            height:     parent.height
-            fillMode:   Image.PreserveAspectFit
-            source:     "qrc:/Custom/res/AntLogo.svg"
-            mipmap:     true
+            Image {
+                id:         spiderLogo
+                width:      height
+                height:     parent.height
+                fillMode:   Image.PreserveAspectFit
+                source:     "qrc:/Custom/res/SpiderLogo.svg"
+                mipmap:     true
+            }
+
+            Image {
+                id:         antLogo
+                width:      height
+                height:     parent.height
+                fillMode:   Image.PreserveAspectFit
+                source:     "qrc:/Custom/res/AntLogo.svg"
+                mipmap:     true
+            }
         }
 
         Image {
             id:                 brandImage
-            width:              height
-            height:             parent.height
+
+            anchors.right:      parent.right
+            anchors.top:        parent.top
+            anchors.bottom:     parent.bottom
             fillMode:           Image.PreserveAspectFit
             source:             _outdoorPalette ? _brandImageOutdoor : _brandImageIndoor
             mipmap:             true
