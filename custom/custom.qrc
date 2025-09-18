@@ -1,8 +1,13 @@
 <RCC>
     <qresource prefix="/Custom/qml">
         <file alias="QGroundControl/MainWindow.qml">src/MainWindow.qml</file>
+        <file alias="QGroundControl/QmlControls/FlyViewToolBar.qml">src/FlyViewToolBar.qml</file>
         <file alias="QGroundControl/AppSettings/ServoControlSettings.qml">src/ServoControlSettings.qml</file>
         <file alias="QGroundControl/AppSettings/SettingsPagesModel.qml">src/SettingsPagesModel.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
+    </qresource>
+    <qresource prefix="/Custom/res">
+        <file alias="SpiderLogo.svg">resources/SpiderLogo.svg</file>
+        <file alias="AntLogo.svg">resources/AntLogo.svg</file>
     </qresource>
 </RCC>
