@@ -27,7 +27,7 @@ jobs:
         run: choco install nsis -y
 
       - name: Install GStreamer
-        run: choco install gstreamer -y
+        run: choco install gstreamer-devel -y
 
       - name: Build installer
         run: |
