@@ -410,55 +410,14 @@ ApplicationWindow {
                             spacing:                0
                             Layout.alignment:       Qt.AlignHCenter
 
+
                             QGCLabel {
                                 id:                     versionLabel
-                                text:                   qsTr("%1 Version").arg(QGroundControl.appName)
-                                font.pointSize:         ScreenTools.smallFontPointSize
-                                wrapMode:               QGCLabel.WordWrap
-                                Layout.maximumWidth:    parent.width
-                                Layout.alignment:       Qt.AlignHCenter
-                            }
-
-                            QGCLabel {
-                                text:                   "Lumiere QGC v0.1"
+                                text:                   QGroundControl.appName + " v" + QGroundControl.qgcVersion
                                 font.pointSize:         ScreenTools.smallFontPointSize
                                 wrapMode:               QGCLabel.WrapAnywhere
                                 Layout.maximumWidth:    parent.width
                                 Layout.alignment:       Qt.AlignHCenter
-                            }
-
-                            QGCLabel {
-                                text:                   QGroundControl.qgcAppDate
-                                font.pointSize:         ScreenTools.smallFontPointSize
-                                wrapMode:               QGCLabel.WrapAnywhere
-                                Layout.maximumWidth:    parent.width
-                                Layout.alignment:       Qt.AlignHCenter
-                                visible:                QGroundControl.qgcDailyBuild
-
-                                QGCMouseArea {
-                                    anchors.topMargin:  -(parent.y - versionLabel.y)
-                                    anchors.fill:       parent
-
-                                    onClicked: (mouse) => {
-                                        if (mouse.modifiers & Qt.ControlModifier) {
-                                            QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
-                                            showTouchAreasNotification.open()
-                                        } else if (ScreenTools.isMobile || mouse.modifiers & Qt.ShiftModifier) {
-                                            mainWindow.closeIndicatorDrawer()
-                                            if(!QGroundControl.corePlugin.showAdvancedUI) {
-                                                advancedModeOnConfirmation.open()
-                                            } else {
-                                                advancedModeOffConfirmation.open()
-                                            }
-                                        }
-                                    }
-
-                                    // This allows you to change this on mobile
-                                    onPressAndHold: {
-                                        QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
-                                        showTouchAreasNotification.open()
-                                    }
-                                }
                             }
                         }
                     }
