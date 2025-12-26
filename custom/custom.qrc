@@ -5,4 +5,12 @@
         <file alias="QGroundControl/AppSettings/SettingsPagesModel.qml">src/SettingsPagesModel.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
     </qresource>
+	<qresource prefix="/res">
+          <file alias="SplashScreen">res/SplashScreen.png</file>
+          <file alias="QGCLogoFull.svg">res/QGCLogoFull.svg</file>
+          <file alias="QGCLogoWhite.svg">res/QGCLogoWhite.svg</file>
+      </qresource>
+      <qresource prefix="/qmlimages">
+          <file alias="Hamburger.svg">res/Images/Hamburger.svg</file>
+      </qresource>
 </RCC>
