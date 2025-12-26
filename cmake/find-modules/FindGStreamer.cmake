@@ -2,7 +2,7 @@ if(NOT DEFINED GStreamer_FIND_VERSION)
     if(LINUX)
         set(GStreamer_FIND_VERSION 1.20)
     else()
-        set(GStreamer_FIND_VERSION 1.22.12)
+        set(GStreamer_FIND_VERSION 1.22)
     endif()
 endif()
 
@@ -304,11 +304,7 @@ endif()
 find_package(PkgConfig REQUIRED QUIET)
 
 list(PREPEND CMAKE_PREFIX_PATH ${GStreamer_ROOT_DIR})
-if(LINUX)
-    pkg_check_modules(PC_GSTREAMER REQUIRED gstreamer-1.0>=${GStreamer_FIND_VERSION})
-else()
-    pkg_check_modules(PC_GSTREAMER REQUIRED gstreamer-1.0=${GStreamer_FIND_VERSION})
-endif()
+pkg_check_modules(PC_GSTREAMER REQUIRED gstreamer-1.0>=${GStreamer_FIND_VERSION})
 set(GStreamer_VERSION "${PC_GSTREAMER_VERSION}")
 
 ################################################################################

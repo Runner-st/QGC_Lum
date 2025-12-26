@@ -17,24 +17,24 @@
 
 class QQmlApplicationEngine;
 
-Q_DECLARE_LOGGING_CATEGORY(CustomLog)
+Q_DECLARE_LOGGING_CATEGORY(ServoControlLog)
 
-class CustomUrlInterceptor : public QQmlAbstractUrlInterceptor
+class ServoControlUrlInterceptor : public QQmlAbstractUrlInterceptor
 {
 public:
-    CustomUrlInterceptor() = default;
+    ServoControlUrlInterceptor() = default;
 
     QUrl intercept(const QUrl &url, QQmlAbstractUrlInterceptor::DataType type) override;
 };
 
-class CustomPlugin : public QGCCorePlugin
+class ServoControlPlugin : public QGCCorePlugin
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
 
 public:
-    explicit CustomPlugin(QObject *parent = nullptr);
-    ~CustomPlugin() override;
+    explicit ServoControlPlugin(QObject *parent = nullptr);
+    ~ServoControlPlugin() override;
 
     static QGCCorePlugin *instance();
 
@@ -68,6 +68,6 @@ private:
     static constexpr const char *_settingsGroup = "CustomServoControl";
     static constexpr const char *_settingsKey = "buttons";
 
-    CustomUrlInterceptor *_urlInterceptor = nullptr;
+    ServoControlUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
 };

@@ -7,7 +7,7 @@
  *
  ****************************************************************************/
 
-#include "CustomPlugin.h"
+#include "ServoControlPlugin.h"
 
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
@@ -30,11 +30,11 @@
 #include <cstdint>
 #include <limits>
 
-QGC_LOGGING_CATEGORY(CustomLog, "gcs.custom.customplugin")
+QGC_LOGGING_CATEGORY(ServoControlLog, "gcs.custom.servocontrol")
 
-Q_APPLICATION_STATIC(CustomPlugin, _customPluginInstance);
+Q_APPLICATION_STATIC(ServoControlPlugin, _servoControlPluginInstance);
 
-CustomPlugin::CustomPlugin(QObject *parent)
+ServoControlPlugin::ServoControlPlugin(QObject *parent)
     : QGCCorePlugin(parent)
 {
     _loadServoButtons();
@@ -42,22 +42,22 @@ CustomPlugin::CustomPlugin(QObject *parent)
     emit servoButtonsChanged();
 }
 
-CustomPlugin::~CustomPlugin()
+ServoControlPlugin::~ServoControlPlugin()
 {
     cleanup();
 }
 
-QGCCorePlugin *CustomPlugin::instance()
+QGCCorePlugin *ServoControlPlugin::instance()
 {
-    return _customPluginInstance();
+    return _servoControlPluginInstance();
 }
 
-QVariantList CustomPlugin::servoButtons() const
+QVariantList ServoControlPlugin::servoButtons() const
 {
     return _serializeServoButtons();
 }
 
-void CustomPlugin::addServoButton(const QString &name, int channel, int pulseWidth)
+void ServoControlPlugin::addServoButton(const QString &name, int channel, int pulseWidth)
 {
     const ServoButtonDefinition button = _validatedButton(name, channel, pulseWidth);
     if (button.name.isEmpty()) {
@@ -69,7 +69,7 @@ void CustomPlugin::addServoButton(const QString &name, int channel, int pulseWid
     emit servoButtonsChanged();
 }
 
-void CustomPlugin::updateServoButton(int index, const QString &name, int channel, int pulseWidth)
+void ServoControlPlugin::updateServoButton(int index, const QString &name, int channel, int pulseWidth)
 {
     if (index < 0 || index >= _servoButtons.count()) {
         return;
@@ -85,7 +85,7 @@ void CustomPlugin::updateServoButton(int index, const QString &name, int channel
     emit servoButtonsChanged();
 }
 
-void CustomPlugin::removeServoButton(int index)
+void ServoControlPlugin::removeServoButton(int index)
 {
     if (index < 0 || index >= _servoButtons.count()) {
         return;
@@ -96,7 +96,7 @@ void CustomPlugin::removeServoButton(int index)
     emit servoButtonsChanged();
 }
 
-void CustomPlugin::triggerServoCommand(int channel, int pulseWidth)
+void ServoControlPlugin::triggerServoCommand(int channel, int pulseWidth)
 {
     if (channel < 1) {
         return;
@@ -114,14 +114,14 @@ void CustomPlugin::triggerServoCommand(int channel, int pulseWidth)
         vehicle->sendMavCommandWithLambdaFallback(
             [vehicle, sanitizedChannel, sanitizedPulse]() {
                 if (sanitizedChannel < 1 || sanitizedChannel > QGCMAVLink::maxRcChannels) {
-                    qCWarning(CustomLog) << "Servo channel" << sanitizedChannel
+                    qCWarning(ServoControlLog) << "Servo channel" << sanitizedChannel
                                          << "is outside RC override range";
                     return;
                 }
 
                 const auto sharedLink = vehicle->vehicleLinkManager()->primaryLink().lock();
                 if (!sharedLink) {
-                    qCWarning(CustomLog) << "Unable to send RC override without an active link";
+                    qCWarning(ServoControlLog) << "Unable to send RC override without an active link";
                     return;
                 }
 
@@ -170,18 +170,18 @@ void CustomPlugin::triggerServoCommand(int channel, int pulseWidth)
     }
 }
 
-QQmlApplicationEngine *CustomPlugin::createQmlApplicationEngine(QObject *parent)
+QQmlApplicationEngine *ServoControlPlugin::createQmlApplicationEngine(QObject *parent)
 {
     _qmlEngine = QGCCorePlugin::createQmlApplicationEngine(parent);
     if (!_urlInterceptor) {
-        _urlInterceptor = new CustomUrlInterceptor();
+        _urlInterceptor = new ServoControlUrlInterceptor();
         _qmlEngine->addUrlInterceptor(_urlInterceptor);
     }
 
     return _qmlEngine;
 }
 
-void CustomPlugin::cleanup()
+void ServoControlPlugin::cleanup()
 {
     if (_qmlEngine && _urlInterceptor) {
         _qmlEngine->removeUrlInterceptor(_urlInterceptor);
@@ -192,7 +192,7 @@ void CustomPlugin::cleanup()
     _qmlEngine = nullptr;
 }
 
-QUrl CustomUrlInterceptor::intercept(const QUrl &url, QQmlAbstractUrlInterceptor::DataType type)
+QUrl ServoControlUrlInterceptor::intercept(const QUrl &url, QQmlAbstractUrlInterceptor::DataType type)
 {
     using DataType = QQmlAbstractUrlInterceptor::DataType;
 
@@ -210,7 +210,7 @@ QUrl CustomUrlInterceptor::intercept(const QUrl &url, QQmlAbstractUrlInterceptor
     return url;
 }
 
-QVariantList CustomPlugin::_serializeServoButtons() const
+QVariantList ServoControlPlugin::_serializeServoButtons() const
 {
     QVariantList serialized;
     serialized.reserve(_servoButtons.size());
@@ -226,7 +226,7 @@ QVariantList CustomPlugin::_serializeServoButtons() const
     return serialized;
 }
 
-bool CustomPlugin::_loadServoButtons()
+bool ServoControlPlugin::_loadServoButtons()
 {
     QSettings settings;
     settings.beginGroup(QLatin1String(_settingsGroup));
@@ -272,7 +272,7 @@ bool CustomPlugin::_loadServoButtons()
     return true;
 }
 
-void CustomPlugin::_saveServoButtons() const
+void ServoControlPlugin::_saveServoButtons() const
 {
     QJsonArray array;
 
@@ -290,7 +290,7 @@ void CustomPlugin::_saveServoButtons() const
     settings.endGroup();
 }
 
-CustomPlugin::ServoButtonDefinition CustomPlugin::_validatedButton(const QString &name, int channel, int pulseWidth) const
+ServoControlPlugin::ServoButtonDefinition ServoControlPlugin::_validatedButton(const QString &name, int channel, int pulseWidth) const
 {
     ServoButtonDefinition button;
     button.name = name.trimmed();

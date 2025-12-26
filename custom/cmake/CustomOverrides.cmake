@@ -1,7 +1,7 @@
 # C++ файли плагіна
 list(APPEND CUSTOM_SOURCES
-    ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.cc
-    ${CMAKE_SOURCE_DIR}/custom/src/CustomPlugin.h
+    ${CMAKE_SOURCE_DIR}/custom/src/ServoControlPlugin.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/ServoControlPlugin.h
 )
 
 # QML файл плагіна

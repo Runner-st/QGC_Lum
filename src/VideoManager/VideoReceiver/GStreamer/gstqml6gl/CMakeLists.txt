@@ -120,7 +120,9 @@ if(EXISTS "${QGC_GST_QT6_PLUGIN_PATH}/resources.qrc")
         BATCHABLE
     )
 
-    if(EXISTS "${QGC_GST_QT6_PLUGIN_PATH}/RGBA_gles.frag")
+    # External GLES shader is only needed for OpenGL ES platforms (Android)
+    # Skip on Windows/macOS/Linux as they use standard OpenGL
+    if(ANDROID AND EXISTS "${QGC_GST_QT6_PLUGIN_PATH}/RGBA_gles.frag")
         find_program(QSB_PROGRAM
             NAMES qsb
             HINTS ${QT_HOST_PATH} ${QT_ROOT_DIR} ${QTDIR}
@@ -153,11 +155,16 @@ if(EXISTS "${QGC_GST_QT6_PLUGIN_PATH}/resources.qrc")
             VERBATIM
         )
 
+        add_custom_target(gstqml6gl_external_shaders ALL DEPENDS ${RGBA_EXTERNAL})
+
+        set_source_files_properties("${RGBA_EXTERNAL}" PROPERTIES GENERATED TRUE)
         set_source_files_properties("${RGBA_EXTERNAL}" PROPERTIES QT_RESOURCE_ALIAS RGBA.frag.qsb.external)
         qt_add_resources(gstqml6gl "gstqml6gl_shaders1"
             PREFIX "/org/freedesktop/gstreamer/qml6"
             FILES "${RGBA_EXTERNAL}"
         )
+
+        add_dependencies(gstqml6gl gstqml6gl_external_shaders)
     endif()
 endif()
 

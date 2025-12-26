@@ -6,8 +6,8 @@ list(APPEND CUSTOM_RESOURCES
 set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .qrc Resources" FORCE)
 
 set(CUSTOM_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomPlugin.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/CustomPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.h
     CACHE INTERNAL "" FORCE
 )
 
@@ -23,8 +23,8 @@ set(CUSTOM_INCLUDE_DIRECTORIES
 
 set(CUSTOM_DEFINITIONS
     QGC_CUSTOM_BUILD
-    CUSTOMHEADER="CustomPlugin.h"
-    CUSTOMCLASS=CustomPlugin
+    CUSTOMHEADER="ServoControlPlugin.h"
+    CUSTOMCLASS=ServoControlPlugin
     CACHE INTERNAL "" FORCE
 )
 
