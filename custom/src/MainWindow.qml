@@ -413,7 +413,7 @@ ApplicationWindow {
 
                             QGCLabel {
                                 id:                     versionLabel
-                                text:                   QGroundControl.appName + " v" + QGroundControl.qgcVersion
+                                text:                   QGroundControl.appName + " " + QGroundControl.qgcVersion
                                 font.pointSize:         ScreenTools.smallFontPointSize
                                 wrapMode:               QGCLabel.WrapAnywhere
                                 Layout.maximumWidth:    parent.width
