@@ -23,6 +23,7 @@ import QGroundControl.Controls
 
 import QGroundControl.FlightDisplay
 import QGroundControl.FlightMap
+import "qrc:/Custom/qml/QGroundControl/FlightDisplay" as CustomFlight
 
 
 import QGroundControl.UTMSP
@@ -121,6 +122,16 @@ Item {
 
             property real leftEdgeBottomInset: visible ? width + anchors.margins : 0
             property real bottomEdgeLeftInset: visible ? height + anchors.margins : 0
+        }
+
+        // Multi-stream PIP view for Links Manager camera streams
+        CustomFlight.MultiPipView {
+            id:                     multiPipView
+            anchors.right:          parent.right
+            anchors.bottom:         parent.bottom
+            anchors.margins:        _toolsMargin
+            anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3
+            z:                      QGroundControl.zOrderWidgets
         }
 
         FlyViewWidgetLayer {

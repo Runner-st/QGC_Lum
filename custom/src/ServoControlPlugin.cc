@@ -8,6 +8,10 @@
  ****************************************************************************/
 
 #include "ServoControlPlugin.h"
+#include "LinksManager/LinksManagerController.h"
+#include "LinksManager/ManagedLinkConfiguration.h"
+#include "LinksManager/CameraConfiguration.h"
+#include "LinksManager/CameraStreamConfiguration.h"
 
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
@@ -25,6 +29,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QVariantMap>
 #include <QtQml/QQmlApplicationEngine>
+#include <QtQml/qqml.h>
 
 #include <array>
 #include <cstdint>
@@ -38,8 +43,24 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     : QGCCorePlugin(parent)
 {
     _loadServoButtons();
-
     emit servoButtonsChanged();
+
+    // Initialize Links Manager
+    _linksManager = new LinksManagerController(this);
+
+    // Register QML types for Links Manager
+    qmlRegisterUncreatableType<LinksManagerController>(
+        "QGroundControl.LinksManager", 1, 0,
+        "LinksManagerController", "Reference only");
+    qmlRegisterUncreatableType<ManagedLinkConfiguration>(
+        "QGroundControl.LinksManager", 1, 0,
+        "ManagedLinkConfiguration", "Reference only");
+    qmlRegisterUncreatableType<CameraConfiguration>(
+        "QGroundControl.LinksManager", 1, 0,
+        "CameraConfiguration", "Reference only");
+    qmlRegisterUncreatableType<CameraStreamConfiguration>(
+        "QGroundControl.LinksManager", 1, 0,
+        "CameraStreamConfiguration", "Reference only");
 }
 
 ServoControlPlugin::~ServoControlPlugin()

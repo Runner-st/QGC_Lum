@@ -56,6 +56,13 @@ ListModel {
     }
 
     ListElement {
+        name: qsTr("Links Manager")
+        url: "qrc:/Custom/qml/QGroundControl/AppSettings/LinksManagerSettings.qml"
+        iconUrl: "qrc:/InstrumentValueIcons/link.svg"
+        pageVisible: function() { return true }
+    }
+
+    ListElement {
         name: qsTr("Comm Links")
         url: "qrc:/qml/QGroundControl/AppSettings/LinkSettings.qml"
         iconUrl: "qrc:/InstrumentValueIcons/usb.svg"

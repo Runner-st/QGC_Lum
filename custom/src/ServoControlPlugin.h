@@ -14,6 +14,7 @@
 #include <QtQml/QQmlAbstractUrlInterceptor>
 
 #include "QGCCorePlugin.h"
+#include "LinksManager/LinksManagerController.h"
 
 class QQmlApplicationEngine;
 
@@ -31,6 +32,7 @@ class ServoControlPlugin : public QGCCorePlugin
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
+    Q_PROPERTY(LinksManagerController* linksManager READ linksManager CONSTANT)
 
 public:
     explicit ServoControlPlugin(QObject *parent = nullptr);
@@ -39,6 +41,7 @@ public:
     static QGCCorePlugin *instance();
 
     QVariantList servoButtons() const;
+    LinksManagerController* linksManager() const { return _linksManager; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -70,4 +73,5 @@ private:
 
     ServoControlUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
+    LinksManagerController *_linksManager = nullptr;
 };

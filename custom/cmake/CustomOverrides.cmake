@@ -2,6 +2,14 @@
 list(APPEND CUSTOM_SOURCES
     ${CMAKE_SOURCE_DIR}/custom/src/ServoControlPlugin.cc
     ${CMAKE_SOURCE_DIR}/custom/src/ServoControlPlugin.h
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/LinksManagerController.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/LinksManagerController.h
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/ManagedLinkConfiguration.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/ManagedLinkConfiguration.h
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/CameraConfiguration.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/CameraConfiguration.h
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/CameraStreamConfiguration.cc
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager/CameraStreamConfiguration.h
 )
 
 # QML файл плагіна
@@ -13,6 +21,7 @@ set(QGC_CUSTOM_QML
 # Include для заголовків
 list(APPEND CUSTOM_INCLUDE_DIRECTORIES
     ${CMAKE_SOURCE_DIR}/custom/src
+    ${CMAKE_SOURCE_DIR}/custom/src/LinksManager
 )
 
 # Stable build (removes "Daily" suffix from app name and window title)

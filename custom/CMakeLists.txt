@@ -8,6 +8,14 @@ set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .q
 set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ManagedLinkConfiguration.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ManagedLinkConfiguration.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraConfiguration.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraConfiguration.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraStreamConfiguration.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraStreamConfiguration.h
     CACHE INTERNAL "" FORCE
 )
 
@@ -18,6 +26,7 @@ set(CUSTOM_LIBRARIES
 
 set(CUSTOM_INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager
     CACHE INTERNAL "" FORCE
 )
 
