@@ -135,6 +135,9 @@ void LinksManagerController::deactivateLink()
         return;
     }
 
+    // Disconnect the comm link before deactivating
+    _disconnectCommLink(_activeLink);
+
     _activeLink = nullptr;
     _activeStreamNames.clear();
     _activeStreamUrls.clear();
@@ -489,6 +492,37 @@ void LinksManagerController::_connectCommLink(ManagedLinkConfiguration *config)
             return;
         }
     }
+}
+
+void LinksManagerController::_disconnectCommLink(ManagedLinkConfiguration *config)
+{
+    if (!config) {
+        return;
+    }
+
+    LinkManager *linkManager = LinkManager::instance();
+    if (!linkManager) {
+        qCWarning(LinksManagerLog) << "LinkManager not available for disconnect";
+        return;
+    }
+
+    QString linkName = _commLinkName(config->name());
+
+    // Find the corresponding comm link configuration and disconnect it
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            LinkInterface *link = cfg->link();
+            if (link) {
+                link->disconnect();
+                qCDebug(LinksManagerLog) << "Disconnected comm link:" << linkName;
+            } else {
+                qCDebug(LinksManagerLog) << "Comm link not connected:" << linkName;
+            }
+            return;
+        }
+    }
+
+    qCDebug(LinksManagerLog) << "Comm link not found for disconnect:" << linkName;
 }
 
 void LinksManagerController::cancelEditing(ManagedLinkConfiguration *config)

@@ -40,10 +40,9 @@ Item {
     }
 
     // Main PIP container - matches stock PIP styling
-    Rectangle {
-        id: pipBackground
+    Item {
+        id: pipContent
         anchors.fill: parent
-        color: "black"
         clip: true
 
         VideoOutput {
@@ -69,7 +68,7 @@ Item {
             }
         }
 
-        // Stream name label at bottom
+        // Stream name label at bottom (when playing)
         Rectangle {
             anchors.left: parent.left
             anchors.bottom: parent.bottom
@@ -104,35 +103,31 @@ Item {
         }
     }
 
-    // Swap icon (matches stock PIP style) - shown on hover
+    // Resize icon (top-right) - matches stock PIP
+    Image {
+        id: pipResizeIcon
+        source: "/qmlimages/pipResize.svg"
+        fillMode: Image.PreserveAspectFit
+        mipmap: true
+        anchors.right: parent.right
+        anchors.top: parent.top
+        visible: ScreenTools.isMobile || pipMouseArea.containsMouse
+        height: ScreenTools.defaultFontPixelHeight * 2.5
+        width: ScreenTools.defaultFontPixelHeight * 2.5
+        sourceSize.height: height
+    }
+
+    // Swap/Sync icon (top-left) - matches stock PIP popup icon position
     Image {
         id: swapIcon
         source: "/qmlimages/MapSync.svg"
         mipmap: true
         fillMode: Image.PreserveAspectFit
-        anchors.right: parent.right
+        anchors.left: parent.left
         anchors.top: parent.top
-        anchors.margins: ScreenTools.defaultFontPixelWidth / 2
-        visible: pipMouseArea.containsMouse
-        height: ScreenTools.defaultFontPixelHeight * 2
-        width: height
+        visible: !ScreenTools.isMobile && pipMouseArea.containsMouse
+        height: ScreenTools.defaultFontPixelHeight * 2.5
+        width: ScreenTools.defaultFontPixelHeight * 2.5
         sourceSize.height: height
-
-        // Semi-transparent background for the icon
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -2
-            color: Qt.rgba(0, 0, 0, 0.5)
-            radius: 4
-            z: -1
-        }
-    }
-
-    // Highlight border on hover (matches stock PIP behavior)
-    Rectangle {
-        anchors.fill: parent
-        color: "transparent"
-        border.color: pipMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : Qt.rgba(1, 1, 1, 0.3)
-        border.width: pipMouseArea.containsMouse ? 2 : 1
     }
 }

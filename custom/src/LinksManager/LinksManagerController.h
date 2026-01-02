@@ -44,7 +44,7 @@ public:
     QStringList activeStreamUrls() const { return _activeStreamUrls; }
 
     int mainStreamIndex() const { return _mainStreamIndex; }
-    void setMainStreamIndex(int index);
+    Q_INVOKABLE void setMainStreamIndex(int index);
 
     // CRUD operations
     Q_INVOKABLE ManagedLinkConfiguration* createConfiguration(const QString &name = QString());
@@ -83,6 +83,7 @@ private:
     void _syncToCommLinks(ManagedLinkConfiguration *config);
     void _removeFromCommLinks(ManagedLinkConfiguration *config);
     void _connectCommLink(ManagedLinkConfiguration *config);
+    void _disconnectCommLink(ManagedLinkConfiguration *config);
     QString _commLinkName(const QString &managedLinkName) const;
 
     QmlObjectListModel *_managedLinks = nullptr;
