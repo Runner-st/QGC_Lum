@@ -8,8 +8,9 @@
         <file alias="QGroundControl/AppSettings/CameraConfigEditor.qml">src/CameraConfigEditor.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyView.qml">src/FlyView.qml</file>
-        <file alias="QGroundControl/FlightDisplay/MultiPipView.qml">src/MultiPipView.qml</file>
-        <file alias="QGroundControl/FlightDisplay/MainStreamView.qml">src/MainStreamView.qml</file>
+        <file alias="QGroundControl/FlightDisplay/FlightDisplayViewVideo.qml">src/FlightDisplayViewVideo.qml</file>
+        <file alias="QGroundControl/FlightDisplay/StreamPipColumn.qml">src/StreamPipColumn.qml</file>
+        <file alias="QGroundControl/FlightDisplay/StreamPipItem.qml">src/StreamPipItem.qml</file>
     </qresource>
 	<qresource prefix="/res">
           <file alias="SplashScreen">res/SplashScreen.png</file>

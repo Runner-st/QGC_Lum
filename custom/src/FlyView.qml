@@ -124,19 +124,13 @@ Item {
             property real bottomEdgeLeftInset: visible ? height + anchors.margins : 0
         }
 
-        // Main stream display from Links Manager (shows first stream when active)
-        CustomFlight.MainStreamView {
-            id:                     mainStreamView
-            anchors.fill:           parent
-            z:                      _fullItemZorder + 0.5  // Below widgets but above map
-        }
-
-        // Multi-stream PIP view for Links Manager camera streams (positioned above GPS PIP)
-        CustomFlight.MultiPipView {
-            id:                     multiPipView
+        // Stream PIP views for Links Manager secondary camera streams (positioned above GPS PIP)
+        CustomFlight.StreamPipColumn {
+            id:                     streamPipColumn
             anchors.left:           parent.left
             anchors.bottom:         _pipView.top
             anchors.margins:        _toolsMargin
+            pipViewReference:       _pipView
             z:                      QGroundControl.zOrderWidgets
         }
 
