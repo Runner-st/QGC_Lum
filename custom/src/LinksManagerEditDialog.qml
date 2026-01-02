@@ -47,10 +47,12 @@ QGCPopupDialog {
     }
 
     onRejected: {
-        if (editingConfig && isNew) {
-            editingConfig.destroy()
-        } else if (editingConfig) {
-            editingConfig.deleteLater()
+        if (editingConfig && _linksManager) {
+            if (isNew) {
+                editingConfig.destroy()
+            } else {
+                _linksManager.cancelEditing(editingConfig)
+            }
         }
     }
 

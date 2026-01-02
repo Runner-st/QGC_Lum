@@ -52,6 +52,7 @@ public:
     Q_INVOKABLE void addConfiguration(ManagedLinkConfiguration *config);
     Q_INVOKABLE void saveConfiguration(ManagedLinkConfiguration *original, ManagedLinkConfiguration *edited);
     Q_INVOKABLE void removeConfiguration(ManagedLinkConfiguration *config);
+    Q_INVOKABLE void cancelEditing(ManagedLinkConfiguration *config);
 
     // Connection management
     Q_INVOKABLE void activateLink(ManagedLinkConfiguration *config);
@@ -81,6 +82,7 @@ private:
     void _updateActiveStreams();
     void _syncToCommLinks(ManagedLinkConfiguration *config);
     void _removeFromCommLinks(ManagedLinkConfiguration *config);
+    void _connectCommLink(ManagedLinkConfiguration *config);
     QString _commLinkName(const QString &managedLinkName) const;
 
     QmlObjectListModel *_managedLinks = nullptr;

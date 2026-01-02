@@ -118,6 +118,11 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
     _mainStreamIndex = 0;
     _updateActiveStreams();
 
+    // Find and connect the corresponding comm link
+    if (config && !config->serverAddress().isEmpty()) {
+        _connectCommLink(config);
+    }
+
     _saveConfigurations();
 
     emit activeLinkChanged();
@@ -375,29 +380,120 @@ void LinksManagerController::_syncToCommLinks(ManagedLinkConfiguration *config)
 
     QString linkName = _commLinkName(config->name());
 
-    // Create new UDP configuration using the public API
-    LinkConfiguration *newConfig = linkManager->createConfiguration(LinkConfiguration::TypeUdp, linkName);
-    UDPConfiguration *udpConfig = qobject_cast<UDPConfiguration*>(newConfig);
-    if (udpConfig) {
-        udpConfig->addHost(config->serverAddress(), config->serverPort());
-        udpConfig->setAutoConnect(config->isAutoConnect());
-        linkManager->endCreateConfiguration(udpConfig);
-        linkManager->saveLinkConfigurationList();
-        qCDebug(LinksManagerLog) << "Synced to Comm Links:" << linkName;
+    // Check if configuration already exists
+    SharedLinkConfigurationPtr existingConfig = nullptr;
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            existingConfig = cfg;
+            break;
+        }
+    }
+
+    if (existingConfig) {
+        // Update existing configuration
+        UDPConfiguration *udpConfig = qobject_cast<UDPConfiguration*>(existingConfig.get());
+        if (udpConfig) {
+            // Clear existing hosts and add the new one
+            while (udpConfig->hostList().count() > 0) {
+                udpConfig->removeHost(udpConfig->hostList().first());
+            }
+            udpConfig->addHost(config->serverAddress(), config->serverPort());
+            udpConfig->setAutoConnect(config->isAutoConnect());
+            linkManager->saveLinkConfigurationList();
+            qCDebug(LinksManagerLog) << "Updated existing Comm Link:" << linkName;
+        }
     } else {
-        qCWarning(LinksManagerLog) << "Failed to create UDP configuration";
-        if (newConfig) {
-            delete newConfig;
+        // Create new UDP configuration using the public API
+        LinkConfiguration *newConfig = linkManager->createConfiguration(LinkConfiguration::TypeUdp, linkName);
+        UDPConfiguration *udpConfig = qobject_cast<UDPConfiguration*>(newConfig);
+        if (udpConfig) {
+            udpConfig->addHost(config->serverAddress(), config->serverPort());
+            udpConfig->setAutoConnect(config->isAutoConnect());
+            linkManager->endCreateConfiguration(udpConfig);
+            linkManager->saveLinkConfigurationList();
+            qCDebug(LinksManagerLog) << "Created new Comm Link:" << linkName;
+        } else {
+            qCWarning(LinksManagerLog) << "Failed to create UDP configuration";
+            if (newConfig) {
+                delete newConfig;
+            }
         }
     }
 }
 
 void LinksManagerController::_removeFromCommLinks(ManagedLinkConfiguration *config)
 {
-    Q_UNUSED(config)
-    // Note: The current LinkManager API doesn't provide public access to iterate configurations.
-    // Comm Links created via Links Manager will persist until manually deleted by the user
-    // through the Comm Links settings page, or when the application is restarted and they
-    // are recreated via _syncToCommLinks.
-    qCDebug(LinksManagerLog) << "Remove from Comm Links - manual deletion required";
+    if (!config) {
+        return;
+    }
+
+    LinkManager *linkManager = LinkManager::instance();
+    if (!linkManager) {
+        return;
+    }
+
+    QString linkName = _commLinkName(config->name());
+
+    // Find and remove the configuration
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            linkManager->removeConfiguration(cfg.get());
+            qCDebug(LinksManagerLog) << "Removed Comm Link:" << linkName;
+            return;
+        }
+    }
+
+    qCDebug(LinksManagerLog) << "Comm Link not found for removal:" << linkName;
+}
+
+void LinksManagerController::_connectCommLink(ManagedLinkConfiguration *config)
+{
+    if (!config || config->serverAddress().isEmpty()) {
+        qCWarning(LinksManagerLog) << "Invalid config for connection";
+        return;
+    }
+
+    LinkManager *linkManager = LinkManager::instance();
+    if (!linkManager) {
+        qCWarning(LinksManagerLog) << "LinkManager not available";
+        return;
+    }
+
+    QString linkName = _commLinkName(config->name());
+
+    // Find the corresponding comm link configuration
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            // Check if already connected
+            if (cfg->link()) {
+                qCDebug(LinksManagerLog) << "Link already connected:" << linkName;
+                return;
+            }
+
+            // Connect the link
+            linkManager->createConnectedLink(cfg.get());
+            qCDebug(LinksManagerLog) << "Initiated connection for:" << linkName;
+            return;
+        }
+    }
+
+    // Configuration doesn't exist yet, create and connect it
+    qCDebug(LinksManagerLog) << "Comm link not found, creating:" << linkName;
+    _syncToCommLinks(config);
+
+    // Now try to connect the newly created link
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            linkManager->createConnectedLink(cfg.get());
+            qCDebug(LinksManagerLog) << "Created and connected:" << linkName;
+            return;
+        }
+    }
+}
+
+void LinksManagerController::cancelEditing(ManagedLinkConfiguration *config)
+{
+    if (config) {
+        config->deleteLater();
+    }
 }

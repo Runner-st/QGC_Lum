@@ -19,8 +19,8 @@ Item {
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
-    property real pipSize: parent.width * 0.15
-    property real pipSpacing: ScreenTools.defaultFontPixelWidth
+    property real pipSize: parent.width * 0.12
+    property real pipSpacing: ScreenTools.defaultFontPixelWidth / 2
 
     readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
     readonly property var _activeLink: _linksManager ? _linksManager.activeLink : null
@@ -28,14 +28,8 @@ Item {
     readonly property var _streamNames: _linksManager ? _linksManager.activeStreamNames : []
     readonly property int _mainStreamIndex: _linksManager ? _linksManager.mainStreamIndex : 0
 
-    // Only visible when there's an active link with multiple streams
-    visible: _activeLink !== null && _streamUrls.length > 1
-
-    // Position in bottom-right corner, above the main PIP
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    anchors.margins: ScreenTools.defaultFontPixelWidth
-    anchors.bottomMargin: ScreenTools.defaultFontPixelHeight * 3
+    // Only visible when there's an active link with streams
+    visible: _activeLink !== null && _streamUrls.length > 0
 
     width: pipColumn.width
     height: pipColumn.height
@@ -49,18 +43,27 @@ Item {
 
             Rectangle {
                 id: pipItem
-                visible: index !== _mainStreamIndex
                 width: pipSize
                 height: pipSize * (9/16)
                 color: "black"
-                border.color: pipMouseArea.containsMouse ? qgcPal.brandingBlue : qgcPal.groupBorder
-                border.width: pipMouseArea.containsMouse ? 2 : 1
+                border.color: {
+                    if (index === _mainStreamIndex) {
+                        return qgcPal.brandingBlue  // Highlight main stream
+                    } else if (pipMouseArea.containsMouse) {
+                        return qgcPal.brandingBlue
+                    } else {
+                        return qgcPal.groupBorder
+                    }
+                }
+                border.width: (index === _mainStreamIndex || pipMouseArea.containsMouse) ? 2 : 1
                 radius: 4
+                opacity: index === _mainStreamIndex ? 0.7 : 1.0  // Dim the main stream indicator
 
                 property string streamUrl: _streamUrls[index] || ""
                 property string streamName: _streamNames[index] || qsTr("Stream %1").arg(index + 1)
+                property bool isMainStream: index === _mainStreamIndex
 
-                // Video player for this stream
+                // Video player for this stream (thumbnail preview)
                 MediaPlayer {
                     id: mediaPlayer
                     source: pipItem.streamUrl
@@ -97,10 +100,34 @@ Item {
                         text: pipItem.streamName
                         color: "white"
                         font.pointSize: ScreenTools.smallFontPointSize
+                        wrapMode: Text.WordWrap
+                        horizontalAlignment: Text.AlignHCenter
+                        width: parent.width - 4
                     }
                 }
 
-                // Stream name overlay
+                // "MAIN" indicator for the current main stream
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.margins: 2
+                    width: mainLabel.width + 4
+                    height: mainLabel.height + 2
+                    color: qgcPal.brandingBlue
+                    radius: 2
+                    visible: pipItem.isMainStream
+
+                    QGCLabel {
+                        id: mainLabel
+                        anchors.centerIn: parent
+                        text: qsTr("MAIN")
+                        color: "white"
+                        font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                        font.bold: true
+                    }
+                }
+
+                // Stream name overlay (for non-main streams when playing)
                 Rectangle {
                     anchors.left: parent.left
                     anchors.bottom: parent.bottom
@@ -109,7 +136,7 @@ Item {
                     height: streamLabel.height + 4
                     color: Qt.rgba(0, 0, 0, 0.6)
                     radius: 2
-                    visible: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                    visible: !pipItem.isMainStream && mediaPlayer.playbackState === MediaPlayer.PlayingState
 
                     QGCLabel {
                         id: streamLabel
@@ -125,23 +152,23 @@ Item {
                     id: pipMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: pipItem.isMainStream ? Qt.ArrowCursor : Qt.PointingHandCursor
                     onClicked: {
-                        if (_linksManager) {
-                            _linksManager.swapMainStream(index)
+                        if (_linksManager && !pipItem.isMainStream) {
+                            _linksManager.setMainStreamIndex(index)
                         }
                     }
                 }
 
-                // Swap icon on hover
+                // Swap icon on hover (only for non-main streams)
                 Image {
                     anchors.top: parent.top
                     anchors.right: parent.right
                     anchors.margins: 4
-                    width: ScreenTools.defaultFontPixelHeight * 1.5
+                    width: ScreenTools.defaultFontPixelHeight * 1.2
                     height: width
                     source: "/qmlimages/MapSync.svg"
-                    visible: pipMouseArea.containsMouse
+                    visible: pipMouseArea.containsMouse && !pipItem.isMainStream
                     sourceSize.height: height
                     mipmap: true
                 }
@@ -149,7 +176,7 @@ Item {
         }
     }
 
-    // Listen for stream changes and restart players
+    // Listen for stream changes
     Connections {
         target: _linksManager
         function onActiveStreamsChanged() {
