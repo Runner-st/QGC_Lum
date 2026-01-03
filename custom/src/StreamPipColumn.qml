@@ -50,15 +50,16 @@ Item {
 
             // Only create items for non-main streams
             Loader {
+                id: streamLoader
                 active: index !== _mainStreamIndex
                 visible: active
 
                 Layout.preferredWidth: root._pipWidth
-                Layout.preferredHeight: root._pipHeight
+                // Use item's implicitHeight to handle collapse/expand
+                Layout.preferredHeight: item ? item.implicitHeight : root._pipHeight
 
                 sourceComponent: StreamPipItem {
                     width: root._pipWidth
-                    height: root._pipHeight
                     streamUrl: _streamUrls[index] || ""
                     streamName: _streamNames[index] || qsTr("Stream %1").arg(index + 1)
                     streamIndex: index

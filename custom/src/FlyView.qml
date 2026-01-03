@@ -107,6 +107,11 @@ Item {
             pipView:    _pipView
         }
 
+        // Check if LinksManager has active streams
+        readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
+        readonly property bool _hasLinksManagerVideo: _linksManager && _linksManager.activeLink && _linksManager.activeStreamUrls.length > 0
+        readonly property bool _hasAnyVideo: QGroundControl.videoManager.hasVideo || _hasLinksManagerVideo
+
         PipView {
             id:                     _pipView
             anchors.left:           parent.left
@@ -115,8 +120,8 @@ Item {
             anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3  // Increased bottom gap for PIP
             item1IsFullSettingsKey: "MainFlyWindowIsMap"
             item1:                  mapControl
-            item2:                  QGroundControl.videoManager.hasVideo ? videoControl : null
-            show:                   QGroundControl.videoManager.hasVideo && !QGroundControl.videoManager.fullScreen &&
+            item2:                  _hasAnyVideo ? videoControl : null
+            show:                   _hasAnyVideo && !QGroundControl.videoManager.fullScreen &&
                                         (videoControl.pipState.state === videoControl.pipState.pipState || mapControl.pipState.state === mapControl.pipState.pipState)
             z:                      QGroundControl.zOrderWidgets
 

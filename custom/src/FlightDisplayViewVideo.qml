@@ -66,6 +66,24 @@ Item {
         visible: _hasLinksManagerStream
         z: 1  // Above standard video
 
+        // Retry timer for failed connections
+        Timer {
+            id: retryTimer
+            interval: 5000  // Retry every 5 seconds
+            repeat: true
+            running: _hasLinksManagerStream && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
+
+            onTriggered: {
+                if (root._mainStreamUrl.length > 0) {
+                    console.log("Retrying stream connection: " + root._mainStreamName)
+                    linksMediaPlayer.stop()
+                    linksMediaPlayer.source = ""
+                    linksMediaPlayer.source = root._mainStreamUrl
+                    linksMediaPlayer.play()
+                }
+            }
+        }
+
         MediaPlayer {
             id: linksMediaPlayer
             source: root._mainStreamUrl
@@ -78,8 +96,14 @@ Item {
                 }
             }
 
+            onPlaybackStateChanged: {
+                if (playbackState === MediaPlayer.PlayingState) {
+                    retryTimer.stop()
+                }
+            }
+
             onErrorOccurred: (error, errorString) => {
-                console.warn("LinksManager video error: " + errorString)
+                console.warn("LinksManager video error: " + errorString + " - will retry")
             }
         }
 
@@ -123,11 +147,11 @@ Item {
             }
         }
 
-        // Stream name overlay when playing
+        // Stream name overlay when playing (top-center to avoid tool strip)
         Rectangle {
             anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.margins: ScreenTools.defaultFontPixelWidth
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: ScreenTools.defaultFontPixelWidth
             width: streamNameLabel.width + ScreenTools.defaultFontPixelWidth * 2
             height: streamNameLabel.height + ScreenTools.defaultFontPixelHeight / 2
             color: Qt.rgba(0, 0, 0, 0.6)
