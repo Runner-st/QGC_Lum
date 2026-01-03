@@ -64,6 +64,11 @@ Item {
     property real   _fullItemZorder:    0
     property real   _pipItemZorder:     QGroundControl.zOrderWidgets
 
+    // LinksManager integration - defined at root level for proper scoping
+    readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
+    readonly property bool _hasLinksManagerVideo: _linksManager && _linksManager.activeLink && _linksManager.activeStreamUrls.length > 0
+    readonly property bool _hasAnyVideo: QGroundControl.videoManager.hasVideo || _hasLinksManagerVideo
+
     function _calcCenterViewPort() {
         var newToolInset = Qt.rect(0, 0, width, height)
         toolstrip.adjustToolInset(newToolInset)
@@ -107,11 +112,6 @@ Item {
             pipView:    _pipView
         }
 
-        // Check if LinksManager has active streams
-        readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
-        readonly property bool _hasLinksManagerVideo: _linksManager && _linksManager.activeLink && _linksManager.activeStreamUrls.length > 0
-        readonly property bool _hasAnyVideo: QGroundControl.videoManager.hasVideo || _hasLinksManagerVideo
-
         PipView {
             id:                     _pipView
             anchors.left:           parent.left
@@ -119,16 +119,16 @@ Item {
             anchors.margins:        _toolsMargin
             anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3  // Increased bottom gap for PIP
 
-            // When LinksManager has active streams, ignore saved preference and default to video as main
-            // When not active, use the saved user preference
-            item1IsFullSettingsKey: _hasLinksManagerVideo ? "" : "MainFlyWindowIsMap"
+            // Use saved user preference for which view is main
+            item1IsFullSettingsKey: "MainFlyWindowIsMap"
 
-            // When LinksManager is active: video is item1 (default main), map is item2 (PIP)
-            // When not active: map is item1, video is item2 (uses saved preference)
-            item1:                  _hasLinksManagerVideo ? videoControl : mapControl
-            item2:                  _hasLinksManagerVideo ? mapControl : (_hasAnyVideo ? videoControl : null)
+            // Keep items in stable order - map as item1, video as item2
+            // Always provide both items to avoid null pipState errors
+            item1:                  mapControl
+            item2:                  videoControl
 
-            show:                   _hasAnyVideo && !QGroundControl.videoManager.fullScreen &&
+            // Only show PIP when there's actually video to display
+            show:                   _root._hasAnyVideo && !QGroundControl.videoManager.fullScreen &&
                                         (videoControl.pipState.state === videoControl.pipState.pipState || mapControl.pipState.state === mapControl.pipState.pipState)
             z:                      QGroundControl.zOrderWidgets
 
