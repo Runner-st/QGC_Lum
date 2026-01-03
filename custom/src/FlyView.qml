@@ -118,9 +118,16 @@ Item {
             anchors.bottom:         parent.bottom
             anchors.margins:        _toolsMargin
             anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3  // Increased bottom gap for PIP
-            item1IsFullSettingsKey: "MainFlyWindowIsMap"
-            item1:                  mapControl
-            item2:                  _hasAnyVideo ? videoControl : null
+
+            // When LinksManager has active streams, ignore saved preference and default to video as main
+            // When not active, use the saved user preference
+            item1IsFullSettingsKey: _hasLinksManagerVideo ? "" : "MainFlyWindowIsMap"
+
+            // When LinksManager is active: video is item1 (default main), map is item2 (PIP)
+            // When not active: map is item1, video is item2 (uses saved preference)
+            item1:                  _hasLinksManagerVideo ? videoControl : mapControl
+            item2:                  _hasLinksManagerVideo ? mapControl : (_hasAnyVideo ? videoControl : null)
+
             show:                   _hasAnyVideo && !QGroundControl.videoManager.fullScreen &&
                                         (videoControl.pipState.state === videoControl.pipState.pipState || mapControl.pipState.state === mapControl.pipState.pipState)
             z:                      QGroundControl.zOrderWidgets
