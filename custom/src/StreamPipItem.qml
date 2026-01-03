@@ -103,29 +103,15 @@ Item {
         }
     }
 
-    // Resize icon (top-right) - matches stock PIP
-    Image {
-        id: pipResizeIcon
-        source: "/qmlimages/pipResize.svg"
-        fillMode: Image.PreserveAspectFit
-        mipmap: true
-        anchors.right: parent.right
-        anchors.top: parent.top
-        visible: ScreenTools.isMobile || pipMouseArea.containsMouse
-        height: ScreenTools.defaultFontPixelHeight * 2.5
-        width: ScreenTools.defaultFontPixelHeight * 2.5
-        sourceSize.height: height
-    }
-
-    // Swap/Sync icon (top-left) - matches stock PIP popup icon position
+    // Swap icon (top-right) - click anywhere to swap, icon indicates it
     Image {
         id: swapIcon
         source: "/qmlimages/MapSync.svg"
         mipmap: true
         fillMode: Image.PreserveAspectFit
-        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.top: parent.top
-        visible: !ScreenTools.isMobile && pipMouseArea.containsMouse
+        visible: ScreenTools.isMobile || pipMouseArea.containsMouse
         height: ScreenTools.defaultFontPixelHeight * 2.5
         width: ScreenTools.defaultFontPixelHeight * 2.5
         sourceSize.height: height

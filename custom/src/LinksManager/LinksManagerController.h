@@ -12,6 +12,7 @@
 #include <QtCore/QLoggingCategory>
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
+#include <QtCore/QTimer>
 
 #include "ManagedLinkConfiguration.h"
 #include "QmlControls/QmlObjectListModel.h"
@@ -62,11 +63,11 @@ public:
     // Video stream management
     Q_INVOKABLE void swapMainStream(int pipIndex);
 
-    // Import/Export
-    Q_INVOKABLE bool importFromJson(const QString &filePath);
-    Q_INVOKABLE bool exportToJson(const QString &filePath);
-    Q_INVOKABLE QString exportToJsonString() const;
-    Q_INVOKABLE bool importFromJsonString(const QString &jsonString);
+    // Import/Export (single link)
+    Q_INVOKABLE bool importLinkFromJson(const QString &filePath);
+    Q_INVOKABLE bool exportLinkToJson(ManagedLinkConfiguration *config, const QString &filePath);
+    Q_INVOKABLE QString exportLinkToJsonString(ManagedLinkConfiguration *config) const;
+    Q_INVOKABLE bool importLinkFromJsonString(const QString &jsonString);
 
 signals:
     void activeLinkChanged();
@@ -76,6 +77,10 @@ signals:
     void testConnectionResult(ManagedLinkConfiguration *config, bool success, const QString &message);
     void importExportResult(bool success, const QString &message);
 
+private slots:
+    void _checkCommLinkState();
+    void _onCommLinkDisconnected();
+
 private:
     void _loadConfigurations();
     void _saveConfigurations();
@@ -84,10 +89,14 @@ private:
     void _removeFromCommLinks(ManagedLinkConfiguration *config);
     void _connectCommLink(ManagedLinkConfiguration *config);
     void _disconnectCommLink(ManagedLinkConfiguration *config);
+    void _watchCommLinkForDisconnect(ManagedLinkConfiguration *config);
+    ManagedLinkConfiguration* _findManagedLinkByCommLinkName(const QString &commLinkName);
     QString _commLinkName(const QString &managedLinkName) const;
 
     QmlObjectListModel *_managedLinks = nullptr;
     ManagedLinkConfiguration *_activeLink = nullptr;
+    QTimer *_linkStateTimer = nullptr;
+    QMetaObject::Connection _disconnectConnection;
 
     QStringList _activeStreamNames;
     QStringList _activeStreamUrls;

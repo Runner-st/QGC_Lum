@@ -58,31 +58,38 @@ SettingsPage {
         LinksManagerEditDialog { }
     }
 
-    // Import File Dialog
+    // Import File Dialog (for single link)
     FileDialog {
         id: importDialog
-        title: qsTr("Import Links from JSON")
+        title: qsTr("Import Link from JSON")
         nameFilters: ["JSON files (*.json)"]
         fileMode: FileDialog.OpenFile
         onAccepted: {
             if (_pluginReady) {
-                _linksManager.importFromJson(selectedFile.toString().replace("file:///", ""))
+                _linksManager.importLinkFromJson(selectedFile.toString().replace("file:///", ""))
             }
         }
     }
 
-    // Export File Dialog
+    // Export File Dialog (for single link)
     FileDialog {
         id: exportDialog
-        title: qsTr("Export Links to JSON")
+        title: qsTr("Export Link to JSON")
         nameFilters: ["JSON files (*.json)"]
         fileMode: FileDialog.SaveFile
         defaultSuffix: "json"
+        property var linkToExport: null
         onAccepted: {
-            if (_pluginReady) {
-                _linksManager.exportToJson(selectedFile.toString().replace("file:///", ""))
+            if (_pluginReady && linkToExport) {
+                _linksManager.exportLinkToJson(linkToExport, selectedFile.toString().replace("file:///", ""))
             }
         }
+    }
+
+    function _exportLink(linkConfig) {
+        if (!_pluginReady || !linkConfig) return
+        exportDialog.linkToExport = linkConfig
+        exportDialog.open()
     }
 
     // Test Connection Results
@@ -236,6 +243,12 @@ SettingsPage {
                             }
 
                             QGCButton {
+                                text: qsTr("Export")
+                                onClicked: _exportLink(object)
+                                enabled: _pluginReady
+                            }
+
+                            QGCButton {
                                 text: qsTr("Delete")
                                 onClicked: _deleteLink(object)
                                 enabled: _pluginReady
@@ -245,35 +258,23 @@ SettingsPage {
                 }
             }
 
-            // Add new link button
-            QGCButton {
+            // Add new link and import buttons
+            RowLayout {
                 Layout.fillWidth: true
-                text: qsTr("Add New Link")
-                onClicked: _openEditDialog(null, true)
-                enabled: _pluginReady
-            }
-        }
-    }
+                spacing: ScreenTools.defaultFontPixelWidth
 
-    SettingsGroupLayout {
-        Layout.fillWidth: true
-        heading: qsTr("Import/Export")
-        headingDescription: qsTr("Save or load link configurations as JSON files.")
+                QGCButton {
+                    Layout.fillWidth: true
+                    text: qsTr("Add New Link")
+                    onClicked: _openEditDialog(null, true)
+                    enabled: _pluginReady
+                }
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: ScreenTools.defaultFontPixelWidth
-
-            QGCButton {
-                text: qsTr("Import")
-                onClicked: importDialog.open()
-                enabled: _pluginReady
-            }
-
-            QGCButton {
-                text: qsTr("Export")
-                onClicked: exportDialog.open()
-                enabled: _pluginReady && linkRepeater.count > 0
+                QGCButton {
+                    text: qsTr("Import Link")
+                    onClicked: importDialog.open()
+                    enabled: _pluginReady
+                }
             }
         }
     }

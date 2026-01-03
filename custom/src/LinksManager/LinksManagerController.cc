@@ -14,6 +14,7 @@
 
 #include "QmlObjectListModel.h"
 #include "LinkManager.h"
+#include "LinkInterface.h"
 #include "UDPLink.h"
 
 #include <QtCore/QFile>
@@ -26,8 +27,13 @@ Q_LOGGING_CATEGORY(LinksManagerLog, "LinksManagerLog")
 LinksManagerController::LinksManagerController(QObject *parent)
     : QObject(parent)
     , _managedLinks(new QmlObjectListModel(this))
+    , _linkStateTimer(new QTimer(this))
 {
     _loadConfigurations();
+
+    // Setup timer to check comm link state periodically
+    connect(_linkStateTimer, &QTimer::timeout, this, &LinksManagerController::_checkCommLinkState);
+    _linkStateTimer->start(1000); // Check every second
 }
 
 LinksManagerController::~LinksManagerController()
@@ -197,7 +203,7 @@ void LinksManagerController::setMainStreamIndex(int index)
     }
 }
 
-bool LinksManagerController::importFromJson(const QString &filePath)
+bool LinksManagerController::importLinkFromJson(const QString &filePath)
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -208,12 +214,17 @@ bool LinksManagerController::importFromJson(const QString &filePath)
     QByteArray data = file.readAll();
     file.close();
 
-    return importFromJsonString(QString::fromUtf8(data));
+    return importLinkFromJsonString(QString::fromUtf8(data));
 }
 
-bool LinksManagerController::exportToJson(const QString &filePath)
+bool LinksManagerController::exportLinkToJson(ManagedLinkConfiguration *config, const QString &filePath)
 {
-    QString jsonString = exportToJsonString();
+    if (!config) {
+        emit importExportResult(false, tr("No link selected for export"));
+        return false;
+    }
+
+    QString jsonString = exportLinkToJsonString(config);
     if (jsonString.isEmpty()) {
         emit importExportResult(false, tr("Failed to generate JSON"));
         return false;
@@ -228,29 +239,25 @@ bool LinksManagerController::exportToJson(const QString &filePath)
     file.write(jsonString.toUtf8());
     file.close();
 
-    emit importExportResult(true, tr("Exported %1 links").arg(_managedLinks->count()));
+    emit importExportResult(true, tr("Exported link: %1").arg(config->name()));
     return true;
 }
 
-QString LinksManagerController::exportToJsonString() const
+QString LinksManagerController::exportLinkToJsonString(ManagedLinkConfiguration *config) const
 {
+    if (!config) {
+        return QString();
+    }
+
     QJsonObject root;
     root["version"] = kJsonVersion;
-
-    QJsonArray linksArray;
-    for (int i = 0; i < _managedLinks->count(); i++) {
-        ManagedLinkConfiguration *config = qobject_cast<ManagedLinkConfiguration*>(_managedLinks->get(i));
-        if (config) {
-            linksArray.append(config->toJson());
-        }
-    }
-    root["links"] = linksArray;
+    root["link"] = config->toJson();
 
     QJsonDocument doc(root);
     return QString::fromUtf8(doc.toJson(QJsonDocument::Indented));
 }
 
-bool LinksManagerController::importFromJsonString(const QString &jsonString)
+bool LinksManagerController::importLinkFromJsonString(const QString &jsonString)
 {
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
@@ -267,35 +274,36 @@ bool LinksManagerController::importFromJsonString(const QString &jsonString)
         return false;
     }
 
-    QJsonArray linksArray = root["links"].toArray();
-    int importedCount = 0;
-
-    for (const QJsonValue &value : linksArray) {
-        ManagedLinkConfiguration *config = new ManagedLinkConfiguration(this);
-        config->fromJson(value.toObject());
-
-        // Check for duplicate names
-        bool duplicate = false;
-        for (int i = 0; i < _managedLinks->count(); i++) {
-            ManagedLinkConfiguration *existing = qobject_cast<ManagedLinkConfiguration*>(_managedLinks->get(i));
-            if (existing && existing->name() == config->name()) {
-                duplicate = true;
-                break;
-            }
-        }
-
-        if (duplicate) {
-            config->setName(config->name() + tr(" (imported)"));
-        }
-
-        _managedLinks->append(config);
-        _syncToCommLinks(config);
-        importedCount++;
+    // Handle single link format
+    QJsonObject linkObj = root["link"].toObject();
+    if (linkObj.isEmpty()) {
+        emit importExportResult(false, tr("Invalid link data in JSON"));
+        return false;
     }
+
+    ManagedLinkConfiguration *config = new ManagedLinkConfiguration(this);
+    config->fromJson(linkObj);
+
+    // Check for duplicate names
+    bool duplicate = false;
+    for (int i = 0; i < _managedLinks->count(); i++) {
+        ManagedLinkConfiguration *existing = qobject_cast<ManagedLinkConfiguration*>(_managedLinks->get(i));
+        if (existing && existing->name() == config->name()) {
+            duplicate = true;
+            break;
+        }
+    }
+
+    if (duplicate) {
+        config->setName(config->name() + tr(" (imported)"));
+    }
+
+    _managedLinks->append(config);
+    _syncToCommLinks(config);
 
     _saveConfigurations();
     emit linksChanged();
-    emit importExportResult(true, tr("Imported %1 links").arg(importedCount));
+    emit importExportResult(true, tr("Imported link: %1").arg(config->name()));
 
     return true;
 }
@@ -530,4 +538,111 @@ void LinksManagerController::cancelEditing(ManagedLinkConfiguration *config)
     if (config) {
         config->deleteLater();
     }
+}
+
+void LinksManagerController::_checkCommLinkState()
+{
+    LinkManager *linkManager = LinkManager::instance();
+    if (!linkManager) {
+        return;
+    }
+
+    // Check each managed link's corresponding comm link state
+    for (int i = 0; i < _managedLinks->count(); i++) {
+        ManagedLinkConfiguration *config = qobject_cast<ManagedLinkConfiguration*>(_managedLinks->get(i));
+        if (!config) continue;
+
+        QString linkName = _commLinkName(config->name());
+        bool commLinkConnected = false;
+
+        // Find if comm link exists and is connected
+        for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+            if (cfg && cfg->name() == linkName) {
+                commLinkConnected = (cfg->link() != nullptr);
+                break;
+            }
+        }
+
+        // Sync state: If comm link connected but not active in LinksManager, activate it
+        if (commLinkConnected && _activeLink != config) {
+            qCDebug(LinksManagerLog) << "Auto-activating link due to comm link connection:" << config->name();
+            _activeLink = config;
+            _mainStreamIndex = 0;
+            _updateActiveStreams();
+            _watchCommLinkForDisconnect(config);
+            _saveConfigurations();
+            emit activeLinkChanged();
+            emit mainStreamIndexChanged();
+        }
+        // If this was active but comm link is now disconnected, deactivate
+        else if (!commLinkConnected && _activeLink == config) {
+            qCDebug(LinksManagerLog) << "Auto-deactivating link due to comm link disconnection:" << config->name();
+            _activeLink = nullptr;
+            _activeStreamNames.clear();
+            _activeStreamUrls.clear();
+            _mainStreamIndex = 0;
+            _saveConfigurations();
+            emit activeLinkChanged();
+            emit activeStreamsChanged();
+            emit mainStreamIndexChanged();
+        }
+    }
+}
+
+void LinksManagerController::_onCommLinkDisconnected()
+{
+    qCDebug(LinksManagerLog) << "Comm link disconnected signal received";
+    // The timer will pick this up and deactivate
+}
+
+void LinksManagerController::_watchCommLinkForDisconnect(ManagedLinkConfiguration *config)
+{
+    // Disconnect any previous connection
+    if (_disconnectConnection) {
+        disconnect(_disconnectConnection);
+    }
+
+    if (!config) {
+        return;
+    }
+
+    LinkManager *linkManager = LinkManager::instance();
+    if (!linkManager) {
+        return;
+    }
+
+    QString linkName = _commLinkName(config->name());
+
+    // Find the link and connect to its disconnected signal
+    for (SharedLinkConfigurationPtr &cfg : linkManager->configurations()) {
+        if (cfg && cfg->name() == linkName) {
+            LinkInterface *link = cfg->link();
+            if (link) {
+                _disconnectConnection = connect(link, &LinkInterface::disconnected,
+                                                 this, &LinksManagerController::_onCommLinkDisconnected);
+                qCDebug(LinksManagerLog) << "Watching comm link for disconnect:" << linkName;
+            }
+            break;
+        }
+    }
+}
+
+ManagedLinkConfiguration* LinksManagerController::_findManagedLinkByCommLinkName(const QString &commLinkName)
+{
+    // Extract managed link name from comm link name (remove prefix)
+    QString prefix = QString::fromLatin1(kCommLinkPrefix);
+    if (!commLinkName.startsWith(prefix)) {
+        return nullptr;
+    }
+
+    QString managedName = commLinkName.mid(prefix.length());
+
+    for (int i = 0; i < _managedLinks->count(); i++) {
+        ManagedLinkConfiguration *config = qobject_cast<ManagedLinkConfiguration*>(_managedLinks->get(i));
+        if (config && config->name() == managedName) {
+            return config;
+        }
+    }
+
+    return nullptr;
 }
