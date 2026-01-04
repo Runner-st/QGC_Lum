@@ -69,7 +69,7 @@ Item {
         // Retry timer for failed connections
         Timer {
             id: retryTimer
-            interval: 5000  // Retry every 5 seconds
+            interval: 3000  // Retry every 3 seconds for faster reconnection
             repeat: true
             running: _hasLinksManagerStream && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
 
@@ -81,6 +81,20 @@ Item {
                     linksMediaPlayer.source = root._mainStreamUrl
                     linksMediaPlayer.play()
                 }
+            }
+        }
+
+        // Connection timeout - force retry if stuck in loading state
+        Timer {
+            id: connectionTimeoutTimer
+            interval: 5000  // 5 second connection timeout
+            repeat: false
+            running: _hasLinksManagerStream && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
+
+            onTriggered: {
+                console.log("Connection timeout for stream: " + root._mainStreamName + " - forcing retry")
+                linksMediaPlayer.stop()
+                linksMediaPlayer.source = ""
             }
         }
 
@@ -107,17 +121,25 @@ Item {
             }
         }
 
+        // Helper property to check if we actually have video playing
+        // playbackState becomes PlayingState immediately on play(), but mediaStatus
+        // only becomes BufferedMedia/BufferingMedia when we actually have video data
+        property bool _isActuallyPlaying: linksMediaPlayer.playbackState === MediaPlayer.PlayingState &&
+                                          (linksMediaPlayer.mediaStatus === MediaPlayer.BufferedMedia ||
+                                           linksMediaPlayer.mediaStatus === MediaPlayer.BufferingMedia)
+
         VideoOutput {
             id: linksVideoOutput
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
+            visible: parent._isActuallyPlaying
         }
 
         // Fallback when LinksManager stream not playing
         Rectangle {
             anchors.fill: parent
             color: "black"
-            visible: linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
+            visible: !parent._isActuallyPlaying
 
             Image {
                 id: noVideoImage
@@ -156,7 +178,7 @@ Item {
             height: streamNameLabel.height + ScreenTools.defaultFontPixelHeight / 2
             color: Qt.rgba(0, 0, 0, 0.6)
             radius: 4
-            visible: linksMediaPlayer.playbackState === MediaPlayer.PlayingState
+            visible: _isActuallyPlaying
 
             QGCLabel {
                 id: streamNameLabel
@@ -349,13 +371,23 @@ Item {
         function onActiveStreamsChanged() {
             if (_hasLinksManagerStream && root._mainStreamUrl.length > 0) {
                 linksMediaPlayer.stop()
+                linksMediaPlayer.source = ""
+                linksMediaPlayer.source = root._mainStreamUrl
                 linksMediaPlayer.play()
             }
         }
         function onMainStreamIndexChanged() {
-            if (_hasLinksManagerStream && root._mainStreamUrl.length > 0) {
+            if (_hasLinksManagerStream) {
+                // Force source reload when main stream index changes
                 linksMediaPlayer.stop()
-                linksMediaPlayer.play()
+                linksMediaPlayer.source = ""
+                // Need to re-read the URL with the NEW index
+                var newUrl = root._streamUrls[root._mainStreamIndex] || ""
+                console.log("Main stream index changed to: " + root._mainStreamIndex + ", URL: " + newUrl)
+                if (newUrl.length > 0) {
+                    linksMediaPlayer.source = newUrl
+                    linksMediaPlayer.play()
+                }
             }
         }
     }

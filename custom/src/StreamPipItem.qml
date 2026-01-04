@@ -34,7 +34,7 @@ Item {
     // Retry timer for failed connections
     Timer {
         id: retryTimer
-        interval: 5000  // Retry every 5 seconds
+        interval: 3000  // Retry every 3 seconds for faster reconnection
         repeat: true
         running: root.streamUrl.length > 0 && mediaPlayer.playbackState !== MediaPlayer.PlayingState && _isExpanded
 
@@ -46,6 +46,20 @@ Item {
                 mediaPlayer.source = root.streamUrl
                 mediaPlayer.play()
             }
+        }
+    }
+
+    // Connection timeout - force retry if stuck in loading state
+    Timer {
+        id: connectionTimeoutTimer
+        interval: 5000  // 5 second connection timeout
+        repeat: false
+        running: root.streamUrl.length > 0 && mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia && _isExpanded
+
+        onTriggered: {
+            console.log("Connection timeout for stream: " + root.streamName + " - forcing retry")
+            mediaPlayer.stop()
+            mediaPlayer.source = ""
         }
     }
 
@@ -73,6 +87,11 @@ Item {
         }
     }
 
+    // Helper property to check if we actually have video playing
+    property bool _isActuallyPlaying: mediaPlayer.playbackState === MediaPlayer.PlayingState &&
+                                      (mediaPlayer.mediaStatus === MediaPlayer.BufferedMedia ||
+                                       mediaPlayer.mediaStatus === MediaPlayer.BufferingMedia)
+
     // Main PIP container - visible when expanded
     Item {
         id: pipContent
@@ -84,13 +103,14 @@ Item {
             id: videoOutput
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectCrop
+            visible: root._isActuallyPlaying
         }
 
         // Fallback when video not playing
         Rectangle {
             anchors.fill: parent
             color: "black"
-            visible: mediaPlayer.playbackState !== MediaPlayer.PlayingState
+            visible: !root._isActuallyPlaying
 
             QGCLabel {
                 anchors.centerIn: parent
@@ -112,7 +132,7 @@ Item {
             height: nameLabel.height + 4
             color: Qt.rgba(0, 0, 0, 0.7)
             radius: 2
-            visible: mediaPlayer.playbackState === MediaPlayer.PlayingState
+            visible: root._isActuallyPlaying
 
             QGCLabel {
                 id: nameLabel
