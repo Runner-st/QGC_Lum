@@ -126,7 +126,7 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
     _updateActiveStreams();
 
     // Update VideoManager with the main stream URL for GStreamer playback
-    if (_activeStreamUrls.count() > 0) {
+    if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
         VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
     }
 
@@ -151,7 +151,9 @@ void LinksManagerController::deactivateLink()
     _disconnectCommLink(_activeLink);
 
     // Clear VideoManager override to restore default video settings
-    VideoManager::instance()->clearOverrideUri();
+    if (VideoManager::instance()) {
+        VideoManager::instance()->clearOverrideUri();
+    }
 
     _activeLink = nullptr;
     _activeStreamNames.clear();
@@ -210,7 +212,9 @@ void LinksManagerController::setMainStreamIndex(int index)
         _mainStreamIndex = index;
 
         // Update VideoManager with the new main stream URL for GStreamer playback
-        VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
+        if (VideoManager::instance()) {
+            VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
+        }
 
         emit mainStreamIndexChanged();
     }
@@ -346,7 +350,8 @@ void LinksManagerController::_loadConfigurations()
         _updateActiveStreams();
 
         // Update VideoManager with the main stream URL for GStreamer playback
-        if (_activeStreamUrls.count() > 0) {
+        // Note: VideoManager might not be initialized yet during startup, so we defer this
+        if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
             VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
         }
 
@@ -590,7 +595,7 @@ void LinksManagerController::_checkCommLinkState()
             _updateActiveStreams();
 
             // Update VideoManager with the main stream URL for GStreamer playback
-            if (_activeStreamUrls.count() > 0) {
+            if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
                 VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
             }
 
@@ -604,7 +609,9 @@ void LinksManagerController::_checkCommLinkState()
             qCDebug(LinksManagerLog) << "Auto-deactivating link due to comm link disconnection:" << config->name();
 
             // Clear VideoManager override to restore default video settings
-            VideoManager::instance()->clearOverrideUri();
+            if (VideoManager::instance()) {
+                VideoManager::instance()->clearOverrideUri();
+            }
 
             _activeLink = nullptr;
             _activeStreamNames.clear();
