@@ -32,6 +32,19 @@ Item {
     readonly property string _mainStreamUrl:    _hasLinksManagerStream ? (_streamUrls[_mainStreamIndex] || "") : ""
     readonly property string _mainStreamName:   _hasLinksManagerStream ? (_streamNames[_mainStreamIndex] || "") : ""
 
+    // Helper function to add low-latency options to RTSP URLs
+    function makeLowLatencyUrl(url) {
+        if (!url || url.length === 0) return url
+        if (!url.toLowerCase().startsWith("rtsp://")) return url
+
+        // Add FFmpeg low-latency options for RTSP streams
+        // rtsp_transport=udp - use UDP for lower latency (vs TCP)
+        // buffer_size=0 - minimal buffer
+        // These options are passed via URL query string to FFmpeg
+        var separator = url.indexOf("?") >= 0 ? "&" : "?"
+        return url + separator + "rtsp_transport=udp&buffer_size=0"
+    }
+
     // Standard VideoManager properties
     property double _ar:                QGroundControl.videoManager.gstreamerEnabled
                                             ? QGroundControl.videoManager.videoSize.width / QGroundControl.videoManager.videoSize.height
@@ -78,7 +91,7 @@ Item {
                     console.log("Retrying stream connection: " + root._mainStreamName)
                     linksMediaPlayer.stop()
                     linksMediaPlayer.source = ""
-                    linksMediaPlayer.source = root._mainStreamUrl
+                    linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
                     linksMediaPlayer.play()
                 }
             }
@@ -100,7 +113,7 @@ Item {
 
         MediaPlayer {
             id: linksMediaPlayer
-            source: root._mainStreamUrl
+            source: root.makeLowLatencyUrl(root._mainStreamUrl)
             videoOutput: linksVideoOutput
             autoPlay: true
 
@@ -148,7 +161,7 @@ Item {
                     console.log("Stream frozen detected, forcing reconnection: " + root._mainStreamName)
                     linksMediaPlayer.stop()
                     linksMediaPlayer.source = ""
-                    linksMediaPlayer.source = root._mainStreamUrl
+                    linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
                     linksMediaPlayer.play()
                 }
                 lastPosition = linksMediaPlayer.position
@@ -165,7 +178,7 @@ Item {
         VideoOutput {
             id: linksVideoOutput
             anchors.fill: parent
-            fillMode: VideoOutput.PreserveAspectFit
+            fillMode: VideoOutput.PreserveAspectCrop
             visible: linksManagerVideo._isActuallyPlaying
         }
 
@@ -406,7 +419,7 @@ Item {
             if (_hasLinksManagerStream && root._mainStreamUrl.length > 0) {
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
-                linksMediaPlayer.source = root._mainStreamUrl
+                linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
                 linksMediaPlayer.play()
             }
         }
@@ -419,7 +432,7 @@ Item {
                 var newUrl = root._streamUrls[root._mainStreamIndex] || ""
                 console.log("Main stream index changed to: " + root._mainStreamIndex + ", URL: " + newUrl)
                 if (newUrl.length > 0) {
-                    linksMediaPlayer.source = newUrl
+                    linksMediaPlayer.source = root.makeLowLatencyUrl(newUrl)
                     linksMediaPlayer.play()
                 }
             }

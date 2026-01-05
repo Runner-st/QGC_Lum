@@ -31,6 +31,16 @@ Item {
         _isExpanded = expanded
     }
 
+    // Helper function to add low-latency options to RTSP URLs
+    function makeLowLatencyUrl(url) {
+        if (!url || url.length === 0) return url
+        if (!url.toLowerCase().startsWith("rtsp://")) return url
+
+        // Add FFmpeg low-latency options for RTSP streams
+        var separator = url.indexOf("?") >= 0 ? "&" : "?"
+        return url + separator + "rtsp_transport=udp&buffer_size=0"
+    }
+
     // Retry timer for failed connections
     Timer {
         id: retryTimer
@@ -43,7 +53,7 @@ Item {
                 console.log("Retrying stream: " + root.streamName)
                 mediaPlayer.stop()
                 mediaPlayer.source = ""
-                mediaPlayer.source = root.streamUrl
+                mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
                 mediaPlayer.play()
             }
         }
@@ -66,7 +76,7 @@ Item {
     // Video player for this stream
     MediaPlayer {
         id: mediaPlayer
-        source: root.streamUrl
+        source: root.makeLowLatencyUrl(root.streamUrl)
         videoOutput: videoOutput
         autoPlay: true
 
@@ -114,7 +124,7 @@ Item {
                 console.log("PIP stream frozen detected, forcing reconnection: " + root.streamName)
                 mediaPlayer.stop()
                 mediaPlayer.source = ""
-                mediaPlayer.source = root.streamUrl
+                mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
                 mediaPlayer.play()
             }
             lastPosition = mediaPlayer.position
