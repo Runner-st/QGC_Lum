@@ -116,8 +116,42 @@ Item {
                 }
             }
 
+            onMediaStatusChanged: {
+                // Detect stalled or dead streams and force reconnection
+                if (mediaStatus === MediaPlayer.StalledMedia ||
+                    mediaStatus === MediaPlayer.EndOfMedia ||
+                    mediaStatus === MediaPlayer.InvalidMedia) {
+                    console.log("Stream stalled/ended, forcing reconnection: " + root._mainStreamName)
+                    stop()
+                    source = ""
+                    // Retry timer will pick it up
+                }
+            }
+
             onErrorOccurred: (error, errorString) => {
                 console.warn("LinksManager video error: " + errorString + " - will retry")
+            }
+        }
+
+        // Stream health check timer - detects frozen streams that still report as playing
+        Timer {
+            id: streamHealthTimer
+            interval: 10000  // Check every 10 seconds
+            repeat: true
+            running: _hasLinksManagerStream && linksMediaPlayer.playbackState === MediaPlayer.PlayingState
+
+            property int lastPosition: 0
+
+            onTriggered: {
+                // If position hasn't changed and we think we're playing, stream is frozen
+                if (linksMediaPlayer.position === lastPosition && linksMediaPlayer.position > 0) {
+                    console.log("Stream frozen detected, forcing reconnection: " + root._mainStreamName)
+                    linksMediaPlayer.stop()
+                    linksMediaPlayer.source = ""
+                    linksMediaPlayer.source = root._mainStreamUrl
+                    linksMediaPlayer.play()
+                }
+                lastPosition = linksMediaPlayer.position
             }
         }
 
@@ -132,14 +166,14 @@ Item {
             id: linksVideoOutput
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
-            visible: parent._isActuallyPlaying
+            visible: linksManagerVideo._isActuallyPlaying
         }
 
         // Fallback when LinksManager stream not playing
         Rectangle {
             anchors.fill: parent
             color: "black"
-            visible: !parent._isActuallyPlaying
+            visible: !linksManagerVideo._isActuallyPlaying
 
             Image {
                 id: noVideoImage
@@ -178,7 +212,7 @@ Item {
             height: streamNameLabel.height + ScreenTools.defaultFontPixelHeight / 2
             color: Qt.rgba(0, 0, 0, 0.6)
             radius: 4
-            visible: _isActuallyPlaying
+            visible: linksManagerVideo._isActuallyPlaying
 
             QGCLabel {
                 id: streamNameLabel

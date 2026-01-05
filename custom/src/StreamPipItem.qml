@@ -82,8 +82,42 @@ Item {
             }
         }
 
+        onMediaStatusChanged: {
+            // Detect stalled or dead streams and force reconnection
+            if (mediaStatus === MediaPlayer.StalledMedia ||
+                mediaStatus === MediaPlayer.EndOfMedia ||
+                mediaStatus === MediaPlayer.InvalidMedia) {
+                console.log("PIP stream stalled/ended, forcing reconnection: " + root.streamName)
+                stop()
+                source = ""
+                // Retry timer will pick it up
+            }
+        }
+
         onErrorOccurred: (error, errorString) => {
             console.warn("StreamPipItem: Stream error for " + root.streamName + ": " + errorString + " - will retry")
+        }
+    }
+
+    // Stream health check timer - detects frozen streams that still report as playing
+    Timer {
+        id: streamHealthTimer
+        interval: 10000  // Check every 10 seconds
+        repeat: true
+        running: root.streamUrl.length > 0 && mediaPlayer.playbackState === MediaPlayer.PlayingState && _isExpanded
+
+        property int lastPosition: 0
+
+        onTriggered: {
+            // If position hasn't changed and we think we're playing, stream is frozen
+            if (mediaPlayer.position === lastPosition && mediaPlayer.position > 0) {
+                console.log("PIP stream frozen detected, forcing reconnection: " + root.streamName)
+                mediaPlayer.stop()
+                mediaPlayer.source = ""
+                mediaPlayer.source = root.streamUrl
+                mediaPlayer.play()
+            }
+            lastPosition = mediaPlayer.position
         }
     }
 

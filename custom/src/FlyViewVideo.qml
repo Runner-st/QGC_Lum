@@ -55,12 +55,12 @@ Item {
         onTriggered:  QGroundControl.videoManager.startVideo()
     }
 
-    //-- Video Streaming (visible when VideoManager OR LinksManager has video)
+    //-- Video Streaming (always visible to show placeholder when no video)
     FlightDisplayViewVideo {
         id:             videoStreaming
         anchors.fill:   parent
         useSmallFont:   _root.pipState.state !== _root.pipState.fullState
-        visible:        QGroundControl.videoManager.isStreamSource || _hasLinksManagerVideo
+        visible:        true
     }
     //-- UVC Video (USB Camera or Video Device)
     Loader {
