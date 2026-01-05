@@ -277,6 +277,10 @@ bool VideoManager::hasThermal() const
 
 bool VideoManager::hasVideo() const
 {
+    // Override URI takes precedence
+    if (!_overrideUri.isEmpty()) {
+        return true;
+    }
     return (_videoSettings->streamEnabled()->rawValue().toBool() && _videoSettings->streamConfigured());
 }
 
@@ -499,6 +503,12 @@ bool VideoManager::_updateSettings(VideoReceiver *receiver)
     }
 
     if (receiver->isThermal()) {
+        return settingsChanged;
+    }
+
+    // Check for override URI first (from LinksManager or other external sources)
+    if (!_overrideUri.isEmpty()) {
+        settingsChanged |= _updateVideoUri(receiver, _overrideUri);
         return settingsChanged;
     }
 
@@ -787,6 +797,26 @@ void VideoManager::startVideo()
     }
 
     _restartAllVideos();
+}
+
+void VideoManager::setOverrideUri(const QString &uri)
+{
+    if (_overrideUri != uri) {
+        qCDebug(VideoManagerLog) << "Setting override URI:" << uri;
+        _overrideUri = uri;
+        emit overrideUriChanged();
+        _restartAllVideos();
+    }
+}
+
+void VideoManager::clearOverrideUri()
+{
+    if (!_overrideUri.isEmpty()) {
+        qCDebug(VideoManagerLog) << "Clearing override URI";
+        _overrideUri.clear();
+        emit overrideUriChanged();
+        _restartAllVideos();
+    }
 }
 
 /*===========================================================================*/

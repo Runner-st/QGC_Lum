@@ -49,6 +49,8 @@ class VideoManager : public QObject
     Q_PROPERTY(QSize    videoSize               READ videoSize                                  NOTIFY videoSizeChanged)
     Q_PROPERTY(QString  imageFile               READ imageFile                                  NOTIFY imageFileChanged)
     Q_PROPERTY(QString  uvcVideoSourceID        READ uvcVideoSourceID                           NOTIFY uvcVideoSourceIDChanged)
+    Q_PROPERTY(bool     hasOverrideUri          READ hasOverrideUri                             NOTIFY overrideUriChanged)
+    Q_PROPERTY(QString  overrideUri             READ overrideUri                                NOTIFY overrideUriChanged)
 
 public:
     explicit VideoManager(QObject *parent = nullptr);
@@ -61,6 +63,12 @@ public:
     Q_INVOKABLE void startVideo();
     Q_INVOKABLE void stopRecording();
     Q_INVOKABLE void stopVideo();
+
+    // Override URI for external sources (e.g., LinksManager)
+    Q_INVOKABLE void setOverrideUri(const QString &uri);
+    Q_INVOKABLE void clearOverrideUri();
+    bool hasOverrideUri() const { return !_overrideUri.isEmpty(); }
+    QString overrideUri() const { return _overrideUri; }
 
     void init(QQuickWindow *rootWindow);
     void cleanup();
@@ -100,6 +108,7 @@ signals:
     void streamingChanged();
     void uvcVideoSourceIDChanged();
     void videoSizeChanged();
+    void overrideUriChanged();
 
 private slots:
     void _communicationLostChanged(bool communicationLost);
@@ -131,6 +140,7 @@ private:
     QSize _videoSize;
     QString _imageFile;
     QString _uvcVideoSourceID;
+    QString _overrideUri;
     Vehicle *_activeVehicle = nullptr;
 };
 

@@ -72,19 +72,20 @@ Item {
 
     property double _thermalHeightFactor: 0.85
 
-    // LinksManager Stream Display (takes priority when active)
+    // LinksManager Stream Display (FFmpeg fallback - only shown when GStreamer not handling it)
     Item {
         id: linksManagerVideo
         anchors.fill: parent
-        visible: _hasLinksManagerStream
+        // Hide when VideoManager is handling the stream via GStreamer (hasOverrideUri)
+        visible: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri
         z: 1  // Above standard video
 
-        // Retry timer for failed connections
+        // Retry timer for failed connections (only when using FFmpeg fallback)
         Timer {
             id: retryTimer
             interval: 3000  // Retry every 3 seconds for faster reconnection
             repeat: true
-            running: _hasLinksManagerStream && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
+            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
 
             onTriggered: {
                 if (root._mainStreamUrl.length > 0) {
@@ -97,12 +98,12 @@ Item {
             }
         }
 
-        // Connection timeout - force retry if stuck in loading state
+        // Connection timeout - force retry if stuck in loading state (only when using FFmpeg fallback)
         Timer {
             id: connectionTimeoutTimer
             interval: 5000  // 5 second connection timeout
             repeat: false
-            running: _hasLinksManagerStream && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
+            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
 
             onTriggered: {
                 console.log("Connection timeout for stream: " + root._mainStreamName + " - forcing retry")
@@ -146,12 +147,12 @@ Item {
             }
         }
 
-        // Stream health check timer - detects frozen streams that still report as playing
+        // Stream health check timer - detects frozen streams that still report as playing (only when using FFmpeg fallback)
         Timer {
             id: streamHealthTimer
             interval: 10000  // Check every 10 seconds
             repeat: true
-            running: _hasLinksManagerStream && linksMediaPlayer.playbackState === MediaPlayer.PlayingState
+            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.playbackState === MediaPlayer.PlayingState
 
             property int lastPosition: 0
 
@@ -237,10 +238,10 @@ Item {
         }
     }
 
-    // Standard VideoManager display (shown when LinksManager not active)
+    // Standard VideoManager display (GStreamer - shown when LinksManager not active OR when VideoManager is handling LinksManager stream)
     Item {
         anchors.fill: parent
-        visible: !_hasLinksManagerStream
+        visible: !_hasLinksManagerStream || QGroundControl.videoManager.hasOverrideUri
 
         Image {
             id:             noVideo
@@ -412,11 +413,12 @@ Item {
         }
     }
 
-    // Listen for LinksManager stream changes
+    // Listen for LinksManager stream changes (only for FFmpeg fallback - GStreamer is handled by VideoManager)
     Connections {
         target: _linksManager
         function onActiveStreamsChanged() {
-            if (_hasLinksManagerStream && root._mainStreamUrl.length > 0) {
+            // Only handle for FFmpeg fallback
+            if (_hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && root._mainStreamUrl.length > 0) {
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
                 linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
@@ -424,7 +426,8 @@ Item {
             }
         }
         function onMainStreamIndexChanged() {
-            if (_hasLinksManagerStream) {
+            // Only handle for FFmpeg fallback - GStreamer stream index change is handled by LinksManagerController -> VideoManager
+            if (_hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri) {
                 // Force source reload when main stream index changes
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
