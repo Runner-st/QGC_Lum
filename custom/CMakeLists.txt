@@ -16,6 +16,8 @@ set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraConfiguration.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraStreamConfiguration.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraStreamConfiguration.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ServoButtonConfiguration.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ServoButtonConfiguration.h
     CACHE INTERNAL "" FORCE
 )
 

@@ -23,6 +23,8 @@ Item {
     readonly property real _margin: ScreenTools.defaultFontPixelWidth
     readonly property bool _hasVehicle: QGroundControl.multiVehicleManager.activeVehicle !== null
     readonly property bool _hasCorePlugin: QGroundControl.corePlugin !== null && QGroundControl.corePlugin !== undefined
+    readonly property var _linksManager: _hasCorePlugin ? QGroundControl.corePlugin.linksManager : null
+    readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
 
     function _triggerServo(channel, pulseWidth) {
         if (!_hasVehicle || !_hasCorePlugin) {
@@ -57,11 +59,11 @@ Item {
         anchors.rightMargin: _margin
         anchors.bottomMargin: _margin
         spacing: _margin / 2
-        visible: _hasCorePlugin && buttonRepeater.count > 0
+        visible: _hasActiveLink && buttonRepeater.count > 0
 
         Repeater {
             id: buttonRepeater
-            model: _hasCorePlugin ? QGroundControl.corePlugin.servoButtons : []
+            model: _hasActiveLink ? _linksManager.activeServoButtons : []
 
             QGCButton {
                 text: modelData.name

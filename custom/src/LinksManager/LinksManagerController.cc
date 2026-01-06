@@ -11,6 +11,7 @@
 #include "ManagedLinkConfiguration.h"
 #include "CameraConfiguration.h"
 #include "CameraStreamConfiguration.h"
+#include "ServoButtonConfiguration.h"
 
 #include "QmlObjectListModel.h"
 #include "LinkManager.h"
@@ -81,9 +82,10 @@ void LinksManagerController::saveConfiguration(ManagedLinkConfiguration *origina
     _syncToCommLinks(original);
     _saveConfigurations();
 
-    // If this is the active link, update streams
+    // If this is the active link, update streams and servo buttons
     if (_activeLink == original) {
         _updateActiveStreams();
+        _updateActiveServoButtons();
     }
 
     emit linksChanged();
@@ -124,6 +126,7 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
     _activeLink = config;
     _mainStreamIndex = 0;
     _updateActiveStreams();
+    _updateActiveServoButtons();
 
     // Update VideoManager with the main stream URL for GStreamer playback
     if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
@@ -158,12 +161,14 @@ void LinksManagerController::deactivateLink()
     _activeLink = nullptr;
     _activeStreamNames.clear();
     _activeStreamUrls.clear();
+    _activeServoButtons.clear();
     _mainStreamIndex = 0;
 
     _saveConfigurations();
 
     emit activeLinkChanged();
     emit activeStreamsChanged();
+    emit activeServoButtonsChanged();
     emit mainStreamIndexChanged();
 }
 
@@ -348,6 +353,7 @@ void LinksManagerController::_loadConfigurations()
 
     if (_activeLink) {
         _updateActiveStreams();
+        _updateActiveServoButtons();
         emit activeLinkChanged();
     }
 
@@ -387,6 +393,26 @@ void LinksManagerController::_updateActiveStreams()
     }
 
     emit activeStreamsChanged();
+}
+
+void LinksManagerController::_updateActiveServoButtons()
+{
+    _activeServoButtons.clear();
+
+    if (_activeLink && _activeLink->servoButtons()) {
+        for (int i = 0; i < _activeLink->servoButtons()->count(); i++) {
+            auto *btn = qobject_cast<ServoButtonConfiguration*>(_activeLink->servoButtons()->get(i));
+            if (btn && btn->isValid()) {
+                QVariantMap map;
+                map["name"] = btn->name();
+                map["channel"] = btn->channel();
+                map["pulse"] = btn->pulseWidth();
+                _activeServoButtons.append(map);
+            }
+        }
+    }
+
+    emit activeServoButtonsChanged();
 }
 
 QString LinksManagerController::_commLinkName(const QString &managedLinkName) const
@@ -586,6 +612,7 @@ void LinksManagerController::_checkCommLinkState()
             _activeLink = config;
             _mainStreamIndex = 0;
             _updateActiveStreams();
+            _updateActiveServoButtons();
 
             // Update VideoManager with the main stream URL for GStreamer playback
             if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
@@ -609,10 +636,12 @@ void LinksManagerController::_checkCommLinkState()
             _activeLink = nullptr;
             _activeStreamNames.clear();
             _activeStreamUrls.clear();
+            _activeServoButtons.clear();
             _mainStreamIndex = 0;
             _saveConfigurations();
             emit activeLinkChanged();
             emit activeStreamsChanged();
+            emit activeServoButtonsChanged();
             emit mainStreamIndexChanged();
         }
     }

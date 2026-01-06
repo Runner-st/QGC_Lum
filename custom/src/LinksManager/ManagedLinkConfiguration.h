@@ -15,6 +15,9 @@
 #include <QtCore/QSettings>
 
 #include "CameraConfiguration.h"
+#include "QmlControls/QmlObjectListModel.h"
+
+class ServoButtonConfiguration;
 
 class ManagedLinkConfiguration : public QObject
 {
@@ -26,6 +29,7 @@ class ManagedLinkConfiguration : public QObject
     Q_PROPERTY(bool autoConnect READ isAutoConnect WRITE setAutoConnect NOTIFY autoConnectChanged)
     Q_PROPERTY(CameraConfiguration* camera1 READ camera1 CONSTANT)
     Q_PROPERTY(CameraConfiguration* camera2 READ camera2 CONSTANT)
+    Q_PROPERTY(QmlObjectListModel* servoButtons READ servoButtons CONSTANT)
 
 public:
     explicit ManagedLinkConfiguration(QObject *parent = nullptr);
@@ -47,6 +51,11 @@ public:
 
     CameraConfiguration* camera1() const { return _camera1; }
     CameraConfiguration* camera2() const { return _camera2; }
+    QmlObjectListModel* servoButtons() const { return _servoButtons; }
+
+    Q_INVOKABLE ServoButtonConfiguration* addServoButton(const QString &name, int channel, int pulseWidth);
+    Q_INVOKABLE void removeServoButton(int index);
+    Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
 
     QStringList getAllStreamUrls() const;
     QStringList getAllStreamNames() const;
@@ -73,4 +82,5 @@ private:
     bool _autoConnect = false;
     CameraConfiguration *_camera1 = nullptr;
     CameraConfiguration *_camera2 = nullptr;
+    QmlObjectListModel *_servoButtons = nullptr;
 };

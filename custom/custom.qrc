@@ -1,11 +1,11 @@
 <RCC>
     <qresource prefix="/Custom/qml">
         <file alias="QGroundControl/MainWindow.qml">src/MainWindow.qml</file>
-        <file alias="QGroundControl/AppSettings/ServoControlSettings.qml">src/ServoControlSettings.qml</file>
         <file alias="QGroundControl/AppSettings/SettingsPagesModel.qml">src/SettingsPagesModel.qml</file>
         <file alias="QGroundControl/AppSettings/LinksManagerSettings.qml">src/LinksManagerSettings.qml</file>
         <file alias="QGroundControl/AppSettings/LinksManagerEditDialog.qml">src/LinksManagerEditDialog.qml</file>
         <file alias="QGroundControl/AppSettings/CameraConfigEditor.qml">src/CameraConfigEditor.qml</file>
+        <file alias="QGroundControl/AppSettings/ServoButtonConfigEditor.qml">src/ServoButtonConfigEditor.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyView.qml">src/FlyView.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewVideo.qml">src/FlyViewVideo.qml</file>

@@ -32,6 +32,9 @@ class LinksManagerController : public QObject
     Q_PROPERTY(QStringList activeStreamUrls READ activeStreamUrls NOTIFY activeStreamsChanged)
     Q_PROPERTY(int mainStreamIndex READ mainStreamIndex WRITE setMainStreamIndex NOTIFY mainStreamIndexChanged)
 
+    // Servo buttons for active link
+    Q_PROPERTY(QVariantList activeServoButtons READ activeServoButtons NOTIFY activeServoButtonsChanged)
+
 public:
     explicit LinksManagerController(QObject *parent = nullptr);
     ~LinksManagerController() override;
@@ -43,6 +46,7 @@ public:
 
     QStringList activeStreamNames() const { return _activeStreamNames; }
     QStringList activeStreamUrls() const { return _activeStreamUrls; }
+    QVariantList activeServoButtons() const { return _activeServoButtons; }
 
     int mainStreamIndex() const { return _mainStreamIndex; }
     Q_INVOKABLE void setMainStreamIndex(int index);
@@ -72,6 +76,7 @@ public:
 signals:
     void activeLinkChanged();
     void activeStreamsChanged();
+    void activeServoButtonsChanged();
     void mainStreamIndexChanged();
     void linksChanged();
     void testConnectionResult(ManagedLinkConfiguration *config, bool success, const QString &message);
@@ -85,6 +90,7 @@ private:
     void _loadConfigurations();
     void _saveConfigurations();
     void _updateActiveStreams();
+    void _updateActiveServoButtons();
     void _syncToCommLinks(ManagedLinkConfiguration *config);
     void _removeFromCommLinks(ManagedLinkConfiguration *config);
     void _connectCommLink(ManagedLinkConfiguration *config);
@@ -100,6 +106,7 @@ private:
 
     QStringList _activeStreamNames;
     QStringList _activeStreamUrls;
+    QVariantList _activeServoButtons;
     int _mainStreamIndex = 0;
 
     static constexpr const char* kSettingsGroup = "LinksManager";

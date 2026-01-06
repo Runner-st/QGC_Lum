@@ -12,6 +12,7 @@
 #include "LinksManager/ManagedLinkConfiguration.h"
 #include "LinksManager/CameraConfiguration.h"
 #include "LinksManager/CameraStreamConfiguration.h"
+#include "LinksManager/ServoButtonConfiguration.h"
 
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
@@ -61,6 +62,9 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     qmlRegisterUncreatableType<CameraStreamConfiguration>(
         "QGroundControl.LinksManager", 1, 0,
         "CameraStreamConfiguration", "Reference only");
+    qmlRegisterUncreatableType<ServoButtonConfiguration>(
+        "QGroundControl.LinksManager", 1, 0,
+        "ServoButtonConfiguration", "Reference only");
 }
 
 ServoControlPlugin::~ServoControlPlugin()

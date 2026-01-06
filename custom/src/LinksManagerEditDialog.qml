@@ -159,6 +159,13 @@ QGCPopupDialog {
             cameraConfig: editingConfig ? editingConfig.camera2 : null
         }
 
+        // Servo Button Configuration
+        ServoButtonConfigEditor {
+            Layout.fillWidth: true
+            heading: qsTr("Servo Buttons")
+            linkConfig: editingConfig
+        }
+
         // Validation message
         QGCLabel {
             Layout.fillWidth: true

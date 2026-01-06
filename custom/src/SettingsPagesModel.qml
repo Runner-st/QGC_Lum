@@ -70,13 +70,6 @@ ListModel {
     }
 
     ListElement {
-        name: qsTr("Servo Control")
-        url: "qrc:/Custom/qml/QGroundControl/AppSettings/ServoControlSettings.qml"
-        iconUrl: "qrc:/InstrumentValueIcons/tuning.svg"
-        pageVisible: function() { return true }
-    }
-
-    ListElement {
         name: qsTr("Maps")
         url: "qrc:/qml/QGroundControl/AppSettings/MapSettings.qml"
         iconUrl: "qrc:/InstrumentValueIcons/globe.svg"
