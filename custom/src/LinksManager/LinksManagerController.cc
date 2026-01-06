@@ -348,13 +348,6 @@ void LinksManagerController::_loadConfigurations()
 
     if (_activeLink) {
         _updateActiveStreams();
-
-        // Update VideoManager with the main stream URL for GStreamer playback
-        // Note: VideoManager might not be initialized yet during startup, so we defer this
-        if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
-            VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
-        }
-
         emit activeLinkChanged();
     }
 

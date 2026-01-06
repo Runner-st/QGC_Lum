@@ -665,7 +665,10 @@ void VideoManager::_startReceiver(VideoReceiver *receiver)
     /* The gstreamer rtsp source will switch to tcp if udp is not available after 5 seconds.
        So we should allow for some negotiation time for rtsp */
 
-    const uint32_t timeout = ((source == VideoSettings::videoSourceRTSP) ? _videoSettings->rtspTimeout()->rawValue().toUInt() : 3);
+    // Check if the URI is an RTSP stream (either from settings or override URI)
+    const bool isRtspStream = (source == VideoSettings::videoSourceRTSP) ||
+                              receiver->uri().startsWith(QStringLiteral("rtsp://"), Qt::CaseInsensitive);
+    const uint32_t timeout = isRtspStream ? _videoSettings->rtspTimeout()->rawValue().toUInt() : 3;
 
     receiver->start(timeout);
 }
@@ -805,6 +808,14 @@ void VideoManager::setOverrideUri(const QString &uri)
         qCDebug(VideoManagerLog) << "Setting override URI:" << uri;
         _overrideUri = uri;
         emit overrideUriChanged();
+
+        // Update each receiver's URI before restarting
+        for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
+            if (!receiver->isThermal()) {
+                _updateVideoUri(receiver, uri);
+            }
+        }
+
         _restartAllVideos();
     }
 }
@@ -815,7 +826,9 @@ void VideoManager::clearOverrideUri()
         qCDebug(VideoManagerLog) << "Clearing override URI";
         _overrideUri.clear();
         emit overrideUriChanged();
-        _restartAllVideos();
+
+        // Trigger full video source change to restore default settings
+        _videoSourceChanged();
     }
 }
 

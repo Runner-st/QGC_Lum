@@ -32,6 +32,10 @@ Item {
     readonly property string _mainStreamUrl:    _hasLinksManagerStream ? (_streamUrls[_mainStreamIndex] || "") : ""
     readonly property string _mainStreamName:   _hasLinksManagerStream ? (_streamNames[_mainStreamIndex] || "") : ""
 
+    // Safe check for VideoManager override URI (VideoManager might not be initialized during early startup)
+    // When override is set, GStreamer handles the main stream; FFmpeg is used as fallback for PIPs
+    readonly property bool _videoManagerHasOverride: QGroundControl.videoManager ? QGroundControl.videoManager.hasOverrideUri : false
+
     // Helper function to add low-latency options to RTSP URLs
     function makeLowLatencyUrl(url) {
         if (!url || url.length === 0) return url
@@ -72,12 +76,12 @@ Item {
 
     property double _thermalHeightFactor: 0.85
 
-    // LinksManager Stream Display (FFmpeg fallback - only shown when GStreamer not handling it)
+    // LinksManager Stream Display (FFmpeg fallback - hidden when GStreamer is handling main stream)
     Item {
         id: linksManagerVideo
         anchors.fill: parent
         // Hide when VideoManager is handling the stream via GStreamer (hasOverrideUri)
-        visible: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri
+        visible: _hasLinksManagerStream && !_videoManagerHasOverride
         z: 1  // Above standard video
 
         // Retry timer for failed connections (only when using FFmpeg fallback)
@@ -85,7 +89,7 @@ Item {
             id: retryTimer
             interval: 3000  // Retry every 3 seconds for faster reconnection
             repeat: true
-            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
+            running: _hasLinksManagerStream && !_videoManagerHasOverride && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
 
             onTriggered: {
                 if (root._mainStreamUrl.length > 0) {
@@ -103,7 +107,7 @@ Item {
             id: connectionTimeoutTimer
             interval: 5000  // 5 second connection timeout
             repeat: false
-            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
+            running: _hasLinksManagerStream && !_videoManagerHasOverride && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
 
             onTriggered: {
                 console.log("Connection timeout for stream: " + root._mainStreamName + " - forcing retry")
@@ -152,7 +156,7 @@ Item {
             id: streamHealthTimer
             interval: 10000  // Check every 10 seconds
             repeat: true
-            running: _hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && linksMediaPlayer.playbackState === MediaPlayer.PlayingState
+            running: _hasLinksManagerStream && !_videoManagerHasOverride && linksMediaPlayer.playbackState === MediaPlayer.PlayingState
 
             property int lastPosition: 0
 
@@ -238,10 +242,10 @@ Item {
         }
     }
 
-    // Standard VideoManager display (GStreamer - shown when LinksManager not active OR when VideoManager is handling LinksManager stream)
+    // Standard VideoManager display (GStreamer - shown when LinksManager not active OR when GStreamer is handling LinksManager stream)
     Item {
         anchors.fill: parent
-        visible: !_hasLinksManagerStream || QGroundControl.videoManager.hasOverrideUri
+        visible: !_hasLinksManagerStream || _videoManagerHasOverride
 
         Image {
             id:             noVideo
@@ -418,7 +422,7 @@ Item {
         target: _linksManager
         function onActiveStreamsChanged() {
             // Only handle for FFmpeg fallback
-            if (_hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri && root._mainStreamUrl.length > 0) {
+            if (_hasLinksManagerStream && !_videoManagerHasOverride && root._mainStreamUrl.length > 0) {
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
                 linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
@@ -427,7 +431,7 @@ Item {
         }
         function onMainStreamIndexChanged() {
             // Only handle for FFmpeg fallback - GStreamer stream index change is handled by LinksManagerController -> VideoManager
-            if (_hasLinksManagerStream && !QGroundControl.videoManager.hasOverrideUri) {
+            if (_hasLinksManagerStream && !_videoManagerHasOverride) {
                 // Force source reload when main stream index changes
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
