@@ -661,10 +661,10 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
 
             // Properties for compatibility with strict RTSP servers like TOPOTEK KHP290A609
             // that reject non-RFC-compliant RTSP behavior (e.g., Session header in SETUP)
-            // latency: jitter buffer size in ms (default 2000, we use 200 for low latency while avoiding choppiness)
+            // latency: jitter buffer size in ms (default 2000, we use 150 for low latency while avoiding choppiness)
             g_object_set(source,
                          "location", input.toUtf8().constData(),
-                         "latency", 200,
+                         "latency", 150,
                          "force-non-compliant-url", TRUE,  // GStreamer 1.24.7+ fix for strict RTSP servers
                          nullptr);
         } else if (isTcpMPEGTS) {
