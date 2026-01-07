@@ -33,6 +33,7 @@ public:
     QQuickItem *widget() { return _widget; }
     QString name() const { return _name; }
     QString uri() const { return _uri; }
+    QString cameraType() const { return _cameraType; }
     bool started() const { return _started; }
     bool lowLatency() const { return _lowLatency; }
     QGCVideoStreamInfo *videoStreamInfo() { return _videoStreamInfo; }
@@ -42,6 +43,7 @@ public:
     virtual void setWidget(QQuickItem *widget) { if (widget != _widget) { _widget = widget; emit widgetChanged(_widget); } }
     void setName(const QString &name) { if (name != _name) { _name = name; emit nameChanged(_name); } }
     void setUri(const QString &uri) { if (uri != _uri) { _uri = uri; emit uriChanged(_uri); } }
+    void setCameraType(const QString &cameraType) { if (cameraType != _cameraType) { _cameraType = cameraType; emit cameraTypeChanged(_cameraType); } }
     void setStarted(bool started) { if (started != _started) { _started = started; emit startedChanged(_started); } }
     void setLowLatency(bool lowLatency) { if (lowLatency != _lowLatency) { _lowLatency = lowLatency; emit lowLatencyChanged(_lowLatency); } }
     void setVideoStreamInfo(QGCVideoStreamInfo *videoStreamInfo) { if (videoStreamInfo != _videoStreamInfo) { _videoStreamInfo = videoStreamInfo; emit videoStreamInfoChanged(); } }
@@ -80,6 +82,7 @@ signals:
     void sinkChanged(void *sink);
     void nameChanged(const QString &name);
     void uriChanged(const QString &uri);
+    void cameraTypeChanged(const QString &cameraType);
     void startedChanged(bool started);
     void lowLatencyChanged(bool lowLatency);
     void videoStreamInfoChanged();
@@ -108,6 +111,7 @@ protected:
     QGCVideoStreamInfo *_videoStreamInfo = nullptr;
     QString _name;
     QString _uri;
+    QString _cameraType;
     bool _started = false;
     bool _decoding = false;
     bool _recording = false;

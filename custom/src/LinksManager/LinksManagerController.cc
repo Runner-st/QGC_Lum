@@ -128,9 +128,12 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
     _updateActiveStreams();
     _updateActiveServoButtons();
 
-    // Update VideoManager with the main stream URL for GStreamer playback
+    // Update VideoManager with the main stream URL and camera type for GStreamer playback
     if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
         VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
+        if (_activeCameraTypes.count() > _mainStreamIndex) {
+            VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
+        }
     }
 
     // Find and connect the corresponding comm link
@@ -161,6 +164,7 @@ void LinksManagerController::deactivateLink()
     _activeLink = nullptr;
     _activeStreamNames.clear();
     _activeStreamUrls.clear();
+    _activeCameraTypes.clear();
     _activeServoButtons.clear();
     _mainStreamIndex = 0;
 
@@ -216,9 +220,12 @@ void LinksManagerController::setMainStreamIndex(int index)
     if (_mainStreamIndex != index && index >= 0 && index < _activeStreamUrls.count()) {
         _mainStreamIndex = index;
 
-        // Update VideoManager with the new main stream URL for GStreamer playback
+        // Update VideoManager with the new main stream URL and camera type for GStreamer playback
         if (VideoManager::instance()) {
             VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
+            if (_activeCameraTypes.count() > _mainStreamIndex) {
+                VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
+            }
         }
 
         emit mainStreamIndexChanged();
@@ -386,10 +393,12 @@ void LinksManagerController::_updateActiveStreams()
 {
     _activeStreamNames.clear();
     _activeStreamUrls.clear();
+    _activeCameraTypes.clear();
 
     if (_activeLink) {
         _activeStreamUrls = _activeLink->getAllStreamUrls();
         _activeStreamNames = _activeLink->getAllStreamNames();
+        _activeCameraTypes = _activeLink->getAllCameraTypes();
     }
 
     emit activeStreamsChanged();
@@ -614,9 +623,12 @@ void LinksManagerController::_checkCommLinkState()
             _updateActiveStreams();
             _updateActiveServoButtons();
 
-            // Update VideoManager with the main stream URL for GStreamer playback
+            // Update VideoManager with the main stream URL and camera type for GStreamer playback
             if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
                 VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
+                if (_activeCameraTypes.count() > _mainStreamIndex) {
+                    VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
+                }
             }
 
             _watchCommLinkForDisconnect(config);
@@ -636,6 +648,7 @@ void LinksManagerController::_checkCommLinkState()
             _activeLink = nullptr;
             _activeStreamNames.clear();
             _activeStreamUrls.clear();
+            _activeCameraTypes.clear();
             _activeServoButtons.clear();
             _mainStreamIndex = 0;
             _saveConfigurations();

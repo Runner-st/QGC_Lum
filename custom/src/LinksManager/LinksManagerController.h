@@ -106,6 +106,7 @@ private:
 
     QStringList _activeStreamNames;
     QStringList _activeStreamUrls;
+    QStringList _activeCameraTypes;
     QVariantList _activeServoButtons;
     int _mainStreamIndex = 0;
 

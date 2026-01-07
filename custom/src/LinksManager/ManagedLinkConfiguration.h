@@ -59,6 +59,7 @@ public:
 
     QStringList getAllStreamUrls() const;
     QStringList getAllStreamNames() const;
+    QStringList getAllCameraTypes() const;
 
     void copyFrom(const ManagedLinkConfiguration *source);
     void loadSettings(QSettings &settings, const QString &root);

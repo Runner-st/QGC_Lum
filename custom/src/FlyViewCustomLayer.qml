@@ -103,16 +103,15 @@ Item {
 
                     property var c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
                     property bool isConnected: c12Controller ? c12Controller.isConnected : false
-
-                    readonly property real _buttonSize: ScreenTools.defaultFontPixelHeight * 2.5
-                    readonly property real _spacing: ScreenTools.defaultFontPixelWidth * 0.25
+                    property real buttonSize: ScreenTools.defaultFontPixelHeight * 2.5
+                    property real itemSpacing: ScreenTools.defaultFontPixelWidth * 0.25
 
                     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
                     ColumnLayout {
                         id: mainColumn
                         anchors.centerIn: parent
-                        spacing: _spacing
+                        spacing: widgetRect.itemSpacing
 
                         // Header
                         QGCLabel {
@@ -127,15 +126,15 @@ Item {
                             Layout.alignment: Qt.AlignHCenter
                             columns: 3
                             rows: 3
-                            columnSpacing: _spacing
-                            rowSpacing: _spacing
+                            columnSpacing: widgetRect.itemSpacing
+                            rowSpacing: widgetRect.itemSpacing
 
                             // Top row: Up button centered
-                            Item { width: _buttonSize; height: _buttonSize }
+                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
 
                             QGCButton {
-                                width: _buttonSize
-                                height: _buttonSize
+                                width: widgetRect.buttonSize
+                                height: widgetRect.buttonSize
                                 text: "▲"
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
@@ -144,12 +143,12 @@ Item {
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveUp()
                             }
 
-                            Item { width: _buttonSize; height: _buttonSize }
+                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
 
                             // Middle row: Left and Right buttons
                             QGCButton {
-                                width: _buttonSize
-                                height: _buttonSize
+                                width: widgetRect.buttonSize
+                                height: widgetRect.buttonSize
                                 text: "◀"
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
@@ -158,11 +157,11 @@ Item {
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveLeft()
                             }
 
-                            Item { width: _buttonSize; height: _buttonSize }
+                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
 
                             QGCButton {
-                                width: _buttonSize
-                                height: _buttonSize
+                                width: widgetRect.buttonSize
+                                height: widgetRect.buttonSize
                                 text: "▶"
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
@@ -172,11 +171,11 @@ Item {
                             }
 
                             // Bottom row: Down button centered
-                            Item { width: _buttonSize; height: _buttonSize }
+                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
 
                             QGCButton {
-                                width: _buttonSize
-                                height: _buttonSize
+                                width: widgetRect.buttonSize
+                                height: widgetRect.buttonSize
                                 text: "▼"
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
@@ -185,18 +184,18 @@ Item {
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveDown()
                             }
 
-                            Item { width: _buttonSize; height: _buttonSize }
+                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
                         }
 
                         // Zoom Controls
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: _spacing
+                            spacing: widgetRect.itemSpacing
 
                             QGCButton {
                                 text: qsTr("Zoom+")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
                                 autoRepeatDelay: 300
@@ -206,8 +205,8 @@ Item {
 
                             QGCButton {
                                 text: qsTr("Zoom-")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
                                 autoRepeatDelay: 300
@@ -219,20 +218,20 @@ Item {
                         // Center Controls
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: _spacing
+                            spacing: widgetRect.itemSpacing
 
                             QGCButton {
                                 text: qsTr("Center")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerCamera()
                             }
 
                             QGCButton {
                                 text: qsTr("Tilt")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerTiltOnly()
                             }
@@ -241,20 +240,20 @@ Item {
                         // Thermal Controls
                         RowLayout {
                             Layout.alignment: Qt.AlignHCenter
-                            spacing: _spacing
+                            spacing: widgetRect.itemSpacing
 
                             QGCButton {
                                 text: qsTr("Palette")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.cyclePalette()
                             }
 
                             QGCButton {
                                 text: qsTr("Vert")
-                                Layout.preferredWidth: _buttonSize * 1.5
-                                Layout.preferredHeight: _buttonSize * 0.8
+                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
+                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
                                 enabled: widgetRect.isConnected
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.sendVertCommand()
                             }

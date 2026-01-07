@@ -66,6 +66,7 @@ public:
 
     // Override URI for external sources (e.g., LinksManager)
     Q_INVOKABLE void setOverrideUri(const QString &uri);
+    Q_INVOKABLE void setOverrideCameraType(const QString &cameraType);
     Q_INVOKABLE void clearOverrideUri();
     bool hasOverrideUri() const { return !_overrideUri.isEmpty(); }
     QString overrideUri() const { return _overrideUri; }
@@ -141,6 +142,7 @@ private:
     QString _imageFile;
     QString _uvcVideoSourceID;
     QString _overrideUri;
+    QString _overrideCameraType;
     Vehicle *_activeVehicle = nullptr;
 };
 

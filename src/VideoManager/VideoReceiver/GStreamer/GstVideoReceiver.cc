@@ -659,14 +659,29 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                 break;
             }
 
-            // Properties for compatibility with strict RTSP servers like TOPOTEK KHP290A609
-            // that reject non-RFC-compliant RTSP behavior (e.g., Session header in SETUP)
-            // latency: jitter buffer size in ms (default 2000, we use 150 for low latency while avoiding choppiness)
-            g_object_set(source,
-                         "location", input.toUtf8().constData(),
-                         "latency", 150,
-                         "force-non-compliant-url", TRUE,  // GStreamer 1.24.7+ fix for strict RTSP servers
-                         nullptr);
+            // Apply camera-specific RTSP properties for optimal compatibility
+            if (_cameraType == QStringLiteral("SkydroidC12")) {
+                // Skydroid C12: Low latency with UDP reconnect for reliable streaming
+                g_object_set(source,
+                             "location", input.toUtf8().constData(),
+                             "latency", 17,
+                             "udp-reconnect", 1,
+                             "timeout", 5000000,  // 5 seconds in microseconds
+                             nullptr);
+            } else if (_cameraType == QStringLiteral("TopotekKHP290A609")) {
+                // Topotek KHP290A609: Strict RFC-compliant mode for compatibility
+                g_object_set(source,
+                             "location", input.toUtf8().constData(),
+                             "latency", 150,
+                             "force-non-compliant-url", TRUE,
+                             nullptr);
+            } else {
+                // GenericIPCamera / HerelinkHDMI: Default GStreamer settings
+                g_object_set(source,
+                             "location", input.toUtf8().constData(),
+                             "latency", 2000,  // Default GStreamer latency
+                             nullptr);
+            }
         } else if (isTcpMPEGTS) {
             source = gst_element_factory_make("tcpclientsrc", "source");
             if (!source) {

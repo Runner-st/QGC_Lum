@@ -820,11 +820,27 @@ void VideoManager::setOverrideUri(const QString &uri)
     }
 }
 
+void VideoManager::setOverrideCameraType(const QString &cameraType)
+{
+    if (_overrideCameraType != cameraType) {
+        qCDebug(VideoManagerLog) << "Setting override camera type:" << cameraType;
+        _overrideCameraType = cameraType;
+
+        // Update each receiver's camera type
+        for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
+            if (!receiver->isThermal()) {
+                receiver->setCameraType(cameraType);
+            }
+        }
+    }
+}
+
 void VideoManager::clearOverrideUri()
 {
     if (!_overrideUri.isEmpty()) {
         qCDebug(VideoManagerLog) << "Clearing override URI";
         _overrideUri.clear();
+        _overrideCameraType.clear();
         emit overrideUriChanged();
 
         // Trigger full video source change to restore default settings

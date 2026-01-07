@@ -31,7 +31,8 @@ Rectangle {
     readonly property var _cameraTypes: [
         qsTr("Generic IP Camera"),
         qsTr("Herelink HDMI"),
-        qsTr("Skydroid C12")
+        qsTr("Skydroid C12"),
+        qsTr("Topotek KHP290A609")
     ]
 
     // Check if streams should be read-only based on camera type

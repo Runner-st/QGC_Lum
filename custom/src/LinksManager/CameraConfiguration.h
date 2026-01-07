@@ -33,7 +33,8 @@ public:
     enum CameraType {
         GenericIPCamera = 0,
         HerelinkHDMI,
-        SkydroidC12
+        SkydroidC12,
+        TopotekKHP290A609
     };
     Q_ENUM(CameraType)
 

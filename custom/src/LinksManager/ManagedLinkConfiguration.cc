@@ -129,6 +129,42 @@ QStringList ManagedLinkConfiguration::getAllStreamNames() const
     return names;
 }
 
+QStringList ManagedLinkConfiguration::getAllCameraTypes() const
+{
+    QStringList types;
+
+    auto cameraTypeToString = [](CameraConfiguration::CameraType type) -> QString {
+        switch (type) {
+            case CameraConfiguration::GenericIPCamera:
+                return QStringLiteral("GenericIPCamera");
+            case CameraConfiguration::HerelinkHDMI:
+                return QStringLiteral("HerelinkHDMI");
+            case CameraConfiguration::SkydroidC12:
+                return QStringLiteral("SkydroidC12");
+            case CameraConfiguration::TopotekKHP290A609:
+                return QStringLiteral("TopotekKHP290A609");
+            default:
+                return QStringLiteral("GenericIPCamera");
+        }
+    };
+
+    // Must match the same order as getAllStreamUrls()
+    if (_camera1 && !_camera1->stream1()->isEmpty()) {
+        types.append(cameraTypeToString(_camera1->cameraType()));
+    }
+    if (_camera1 && !_camera1->stream2()->isEmpty()) {
+        types.append(cameraTypeToString(_camera1->cameraType()));
+    }
+    if (_camera2 && !_camera2->stream1()->isEmpty()) {
+        types.append(cameraTypeToString(_camera2->cameraType()));
+    }
+    if (_camera2 && !_camera2->stream2()->isEmpty()) {
+        types.append(cameraTypeToString(_camera2->cameraType()));
+    }
+
+    return types;
+}
+
 void ManagedLinkConfiguration::copyFrom(const ManagedLinkConfiguration *source)
 {
     if (!source) return;
