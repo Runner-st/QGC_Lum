@@ -103,10 +103,126 @@ Rectangle {
             }
         }
 
+        // C12 Camera Configuration (only visible when SkydroidC12 selected)
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: ScreenTools.defaultFontPixelHeight / 4
+            visible: cameraConfig && cameraConfig.cameraType === 2 // SkydroidC12
+
+            QGCLabel {
+                text: qsTr("C12 Camera Settings")
+                font.bold: true
+            }
+
+            // Camera IP
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("Camera IP:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: c12IpField
+                    Layout.fillWidth: true
+                    placeholderText: "192.168.144.108"
+                    text: cameraConfig ? cameraConfig.c12CameraIp : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.c12CameraIp = text
+                        }
+                    }
+                }
+            }
+
+            // RTSP Stream 1 Suffix
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("RTSP1 Suffix:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: c12Rtsp1Field
+                    Layout.fillWidth: true
+                    placeholderText: "554/stream=1"
+                    text: cameraConfig ? cameraConfig.c12Rtsp1Suffix : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.c12Rtsp1Suffix = text
+                        }
+                    }
+                }
+            }
+
+            // RTSP Stream 2 Suffix
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("RTSP2 Suffix:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: c12Rtsp2Field
+                    Layout.fillWidth: true
+                    placeholderText: "555/stream=2"
+                    text: cameraConfig ? cameraConfig.c12Rtsp2Suffix : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.c12Rtsp2Suffix = text
+                        }
+                    }
+                }
+            }
+
+            // Control Port
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("Control Port:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: c12PortField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 8
+                    placeholderText: "5000"
+                    text: cameraConfig ? cameraConfig.c12ControlPort : ""
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 65535 }
+                    onTextChanged: {
+                        if (cameraConfig && text !== "") {
+                            cameraConfig.c12ControlPort = parseInt(text)
+                        }
+                    }
+                }
+            }
+
+            // Info Label
+            QGCLabel {
+                Layout.fillWidth: true
+                text: qsTr("RTSP URLs will be auto-generated: rtsp://[IP]:[Suffix]")
+                font.pointSize: ScreenTools.smallFontPointSize
+                color: qgcPal.textFieldText
+                wrapMode: Text.WordWrap
+            }
+        }
+
         // Stream 1
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
+            visible: cameraConfig && cameraConfig.cameraType !== 2  // Hide for C12
 
             QGCLabel {
                 text: qsTr("Stream 1")
@@ -164,6 +280,7 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
+            visible: cameraConfig && cameraConfig.cameraType !== 2  // Hide for C12
 
             QGCLabel {
                 text: qsTr("Stream 2")
@@ -221,7 +338,9 @@ Rectangle {
         QGCLabel {
             Layout.fillWidth: true
             visible: _isPresetCamera
-            text: qsTr("RTSP URLs are preset for this camera type")
+            text: cameraConfig && cameraConfig.cameraType === 2
+                ? qsTr("RTSP URLs are auto-generated from C12 settings above")
+                : qsTr("RTSP URLs are preset for this camera type")
             font.pointSize: ScreenTools.smallFontPointSize
             color: qgcPal.textFieldText
             wrapMode: Text.WordWrap

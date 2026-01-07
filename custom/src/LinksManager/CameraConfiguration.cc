@@ -43,6 +43,48 @@ void CameraConfiguration::setCameraType(CameraType type)
     }
 }
 
+void CameraConfiguration::setC12CameraIp(const QString &ip)
+{
+    if (_c12CameraIp != ip) {
+        _c12CameraIp = ip;
+        emit c12CameraIpChanged();
+        // If this is a C12 camera, regenerate URLs
+        if (_cameraType == SkydroidC12) {
+            applyPreset();
+        }
+    }
+}
+
+void CameraConfiguration::setC12Rtsp1Suffix(const QString &suffix)
+{
+    if (_c12Rtsp1Suffix != suffix) {
+        _c12Rtsp1Suffix = suffix;
+        emit c12Rtsp1SuffixChanged();
+        if (_cameraType == SkydroidC12) {
+            applyPreset();
+        }
+    }
+}
+
+void CameraConfiguration::setC12Rtsp2Suffix(const QString &suffix)
+{
+    if (_c12Rtsp2Suffix != suffix) {
+        _c12Rtsp2Suffix = suffix;
+        emit c12Rtsp2SuffixChanged();
+        if (_cameraType == SkydroidC12) {
+            applyPreset();
+        }
+    }
+}
+
+void CameraConfiguration::setC12ControlPort(int port)
+{
+    if (_c12ControlPort != port) {
+        _c12ControlPort = port;
+        emit c12ControlPortChanged();
+    }
+}
+
 void CameraConfiguration::applyPreset()
 {
     switch (_cameraType) {
@@ -54,10 +96,14 @@ void CameraConfiguration::applyPreset()
         break;
 
     case SkydroidC12:
+        // Generate URLs dynamically from C12 properties
         _stream1->setName(QStringLiteral("Day"));
-        _stream1->setRtspUrl(QString::fromLatin1(SKYDROID_STREAM1_URL));
+        _stream1->setRtspUrl(QStringLiteral("rtsp://%1:%2")
+            .arg(_c12CameraIp, _c12Rtsp1Suffix));
+
         _stream2->setName(QStringLiteral("Thermal"));
-        _stream2->setRtspUrl(QString::fromLatin1(SKYDROID_STREAM2_URL));
+        _stream2->setRtspUrl(QStringLiteral("rtsp://%1:%2")
+            .arg(_c12CameraIp, _c12Rtsp2Suffix));
         break;
 
     case GenericIPCamera:
@@ -78,6 +124,13 @@ void CameraConfiguration::copyFrom(const CameraConfiguration *source)
 
     setName(source->name());
     setCameraType(source->cameraType());
+
+    // Copy C12-specific properties
+    setC12CameraIp(source->c12CameraIp());
+    setC12Rtsp1Suffix(source->c12Rtsp1Suffix());
+    setC12Rtsp2Suffix(source->c12Rtsp2Suffix());
+    setC12ControlPort(source->c12ControlPort());
+
     _stream1->copyFrom(source->stream1());
     _stream2->copyFrom(source->stream2());
 }
@@ -87,6 +140,13 @@ void CameraConfiguration::loadSettings(QSettings &settings, const QString &root)
     settings.beginGroup(root);
     _name = settings.value("name", QString()).toString();
     _cameraType = static_cast<CameraType>(settings.value("cameraType", GenericIPCamera).toInt());
+
+    // Load C12-specific settings
+    _c12CameraIp = settings.value("c12CameraIp", "192.168.144.108").toString();
+    _c12Rtsp1Suffix = settings.value("c12Rtsp1Suffix", "554/stream=1").toString();
+    _c12Rtsp2Suffix = settings.value("c12Rtsp2Suffix", "555/stream=2").toString();
+    _c12ControlPort = settings.value("c12ControlPort", 5000).toInt();
+
     settings.endGroup();
 
     _stream1->loadSettings(settings, root + "/Stream0");
@@ -98,6 +158,13 @@ void CameraConfiguration::saveSettings(QSettings &settings, const QString &root)
     settings.beginGroup(root);
     settings.setValue("name", _name);
     settings.setValue("cameraType", static_cast<int>(_cameraType));
+
+    // Save C12-specific settings
+    settings.setValue("c12CameraIp", _c12CameraIp);
+    settings.setValue("c12Rtsp1Suffix", _c12Rtsp1Suffix);
+    settings.setValue("c12Rtsp2Suffix", _c12Rtsp2Suffix);
+    settings.setValue("c12ControlPort", _c12ControlPort);
+
     settings.endGroup();
 
     _stream1->saveSettings(settings, root + "/Stream0");
@@ -109,6 +176,14 @@ QJsonObject CameraConfiguration::toJson() const
     QJsonObject json;
     json["name"] = _name;
     json["type"] = cameraTypeToString(_cameraType);
+
+    // Add C12-specific properties
+    if (_cameraType == SkydroidC12) {
+        json["c12CameraIp"] = _c12CameraIp;
+        json["c12Rtsp1Suffix"] = _c12Rtsp1Suffix;
+        json["c12Rtsp2Suffix"] = _c12Rtsp2Suffix;
+        json["c12ControlPort"] = _c12ControlPort;
+    }
 
     QJsonArray streamsArray;
     streamsArray.append(_stream1->toJson());
@@ -122,6 +197,20 @@ void CameraConfiguration::fromJson(const QJsonObject &json)
 {
     setName(json["name"].toString());
     setCameraType(stringToCameraType(json["type"].toString()));
+
+    // Load C12-specific properties if present
+    if (json.contains("c12CameraIp")) {
+        setC12CameraIp(json["c12CameraIp"].toString());
+    }
+    if (json.contains("c12Rtsp1Suffix")) {
+        setC12Rtsp1Suffix(json["c12Rtsp1Suffix"].toString());
+    }
+    if (json.contains("c12Rtsp2Suffix")) {
+        setC12Rtsp2Suffix(json["c12Rtsp2Suffix"].toString());
+    }
+    if (json.contains("c12ControlPort")) {
+        setC12ControlPort(json["c12ControlPort"].toInt(5000));
+    }
 
     QJsonArray streamsArray = json["streams"].toArray();
     if (streamsArray.size() > 0) {
