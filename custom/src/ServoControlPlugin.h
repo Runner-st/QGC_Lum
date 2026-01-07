@@ -15,6 +15,7 @@
 
 #include "QGCCorePlugin.h"
 #include "LinksManager/LinksManagerController.h"
+#include "Camera/C12Controller.h"
 
 class QQmlApplicationEngine;
 
@@ -33,6 +34,7 @@ class ServoControlPlugin : public QGCCorePlugin
     Q_OBJECT
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
     Q_PROPERTY(LinksManagerController* linksManager READ linksManager CONSTANT)
+    Q_PROPERTY(C12Controller* c12Controller READ c12Controller CONSTANT)
 
 public:
     explicit ServoControlPlugin(QObject *parent = nullptr);
@@ -42,6 +44,7 @@ public:
 
     QVariantList servoButtons() const;
     LinksManagerController* linksManager() const { return _linksManager; }
+    C12Controller* c12Controller() const { return _c12Controller; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -53,6 +56,9 @@ public:
 
 signals:
     void servoButtonsChanged();
+
+private slots:
+    void _updateC12ControlAddress();
 
 private:
     struct ServoButtonDefinition {
@@ -74,4 +80,5 @@ private:
     ServoControlUrlInterceptor *_urlInterceptor = nullptr;
     QQmlApplicationEngine *_qmlEngine = nullptr;
     LinksManagerController *_linksManager = nullptr;
+    C12Controller *_c12Controller = nullptr;
 };

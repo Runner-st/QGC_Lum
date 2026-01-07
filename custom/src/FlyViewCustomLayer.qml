@@ -25,6 +25,7 @@ Item {
     readonly property bool _hasCorePlugin: QGroundControl.corePlugin !== null && QGroundControl.corePlugin !== undefined
     readonly property var _linksManager: _hasCorePlugin ? QGroundControl.corePlugin.linksManager : null
     readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
+    readonly property bool _hasC12Camera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 2
 
     function _triggerServo(channel, pulseWidth) {
         if (!_hasVehicle || !_hasCorePlugin) {
@@ -40,7 +41,7 @@ Item {
         leftEdgeCenterInset: parentToolInsets.leftEdgeCenterInset
         leftEdgeBottomInset: parentToolInsets.leftEdgeBottomInset
         rightEdgeTopInset: parentToolInsets.rightEdgeTopInset
-        rightEdgeCenterInset: parentToolInsets.rightEdgeCenterInset
+        rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, c12Widget.visible ? c12Widget.width + _margin : 0)
         rightEdgeBottomInset: parentToolInsets.rightEdgeBottomInset
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
@@ -73,5 +74,18 @@ Item {
                 onClicked: _triggerServo(modelData.channel, modelData.pulse)
             }
         }
+    }
+
+    // C12 Camera Control Widget
+    C12CameraWidget {
+        id: c12Widget
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.rightMargin: _margin
+
+        visible: _hasC12Camera
+        c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
+
+        z: QGroundControl.zOrderWidgets
     }
 }

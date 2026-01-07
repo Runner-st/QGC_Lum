@@ -8,6 +8,8 @@ set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .q
 set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ManagedLinkConfiguration.cc
@@ -23,11 +25,13 @@ set(CUSTOM_SOURCES
 
 set(CUSTOM_LIBRARIES
     Qt6::Core
+    Qt6::Network
     CACHE INTERNAL "" FORCE
 )
 
 set(CUSTOM_INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager
     CACHE INTERNAL "" FORCE
 )
@@ -41,5 +45,6 @@ set(CUSTOM_DEFINITIONS
 
 set(CUSTOM_QT_COMPONENTS
     Core
+    Network
     CACHE INTERNAL "" FORCE
 )

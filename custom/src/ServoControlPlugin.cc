@@ -49,6 +49,13 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     // Initialize Links Manager
     _linksManager = new LinksManagerController(this);
 
+    // Initialize C12 Controller
+    _c12Controller = new C12Controller(this);
+
+    // Connect to active link changes to update C12 control address
+    connect(_linksManager, &LinksManagerController::activeLinkChanged,
+            this, &ServoControlPlugin::_updateC12ControlAddress);
+
     // Register QML types for Links Manager
     qmlRegisterUncreatableType<LinksManagerController>(
         "QGroundControl.LinksManager", 1, 0,
@@ -65,6 +72,11 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     qmlRegisterUncreatableType<ServoButtonConfiguration>(
         "QGroundControl.LinksManager", 1, 0,
         "ServoButtonConfiguration", "Reference only");
+
+    // Register C12Controller QML type
+    qmlRegisterUncreatableType<C12Controller>(
+        "QGroundControl.C12Camera", 1, 0,
+        "C12Controller", "Reference only");
 }
 
 ServoControlPlugin::~ServoControlPlugin()
@@ -327,4 +339,28 @@ ServoControlPlugin::ServoButtonDefinition ServoControlPlugin::_validatedButton(c
     button.pulseWidth = pulseWidth < 0 ? 0 : pulseWidth;
 
     return button;
+}
+
+void ServoControlPlugin::_updateC12ControlAddress()
+{
+    if (!_linksManager || !_c12Controller) {
+        return;
+    }
+
+    ManagedLinkConfiguration *activeLink = _linksManager->activeLink();
+    if (!activeLink) {
+        _c12Controller->setControlAddress(QString());
+        return;
+    }
+
+    // Check if camera1 is configured as C12
+    CameraConfiguration *camera1 = activeLink->camera1();
+    if (camera1 && camera1->cameraType() == CameraConfiguration::SkydroidC12) {
+        QString controlAddress = QStringLiteral("%1:%2")
+            .arg(camera1->c12CameraIp())
+            .arg(camera1->c12ControlPort());
+        _c12Controller->setControlAddress(controlAddress);
+    } else {
+        _c12Controller->setControlAddress(QString());
+    }
 }
