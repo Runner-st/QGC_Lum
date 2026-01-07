@@ -41,7 +41,7 @@ Item {
         leftEdgeCenterInset: parentToolInsets.leftEdgeCenterInset
         leftEdgeBottomInset: parentToolInsets.leftEdgeBottomInset
         rightEdgeTopInset: parentToolInsets.rightEdgeTopInset
-        rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, c12Widget.visible ? c12Widget.width + _margin : 0)
+        rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, c12Widget.active && c12Widget.item ? c12Widget.item.width + _margin : 0)
         rightEdgeBottomInset: parentToolInsets.rightEdgeBottomInset
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
@@ -77,14 +77,200 @@ Item {
     }
 
     // C12 Camera Control Widget
-    C12CameraWidget {
+    Loader {
         id: c12Widget
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: _margin
 
+        active: _hasC12Camera
         visible: _hasC12Camera
-        c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
+
+        sourceComponent: Component {
+            Item {
+                width: widgetRect.width
+                height: widgetRect.height
+
+                Rectangle {
+                    id: widgetRect
+                    width: mainColumn.width + (_margin * 2)
+                    height: mainColumn.height + (_margin * 2)
+                    radius: ScreenTools.defaultFontPixelWidth * 0.5
+                    color: qgcPal.window
+                    border.color: qgcPal.text
+                    border.width: 1
+                    opacity: 0.9
+
+                    property var c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
+                    property bool isConnected: c12Controller ? c12Controller.isConnected : false
+
+                    readonly property real _buttonSize: ScreenTools.defaultFontPixelHeight * 2.5
+                    readonly property real _spacing: ScreenTools.defaultFontPixelWidth * 0.25
+
+                    QGCPalette { id: qgcPal; colorGroupEnabled: true }
+
+                    ColumnLayout {
+                        id: mainColumn
+                        anchors.centerIn: parent
+                        spacing: _spacing
+
+                        // Header
+                        QGCLabel {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("C12 Camera")
+                            font.pointSize: ScreenTools.smallFontPointSize
+                            font.bold: true
+                        }
+
+                        // Movement Controls (Joystick pattern)
+                        Grid {
+                            Layout.alignment: Qt.AlignHCenter
+                            columns: 3
+                            rows: 3
+                            columnSpacing: _spacing
+                            rowSpacing: _spacing
+
+                            // Top row: Up button centered
+                            Item { width: _buttonSize; height: _buttonSize }
+
+                            QGCButton {
+                                width: _buttonSize
+                                height: _buttonSize
+                                text: "▲"
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveUp()
+                            }
+
+                            Item { width: _buttonSize; height: _buttonSize }
+
+                            // Middle row: Left and Right buttons
+                            QGCButton {
+                                width: _buttonSize
+                                height: _buttonSize
+                                text: "◀"
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveLeft()
+                            }
+
+                            Item { width: _buttonSize; height: _buttonSize }
+
+                            QGCButton {
+                                width: _buttonSize
+                                height: _buttonSize
+                                text: "▶"
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveRight()
+                            }
+
+                            // Bottom row: Down button centered
+                            Item { width: _buttonSize; height: _buttonSize }
+
+                            QGCButton {
+                                width: _buttonSize
+                                height: _buttonSize
+                                text: "▼"
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveDown()
+                            }
+
+                            Item { width: _buttonSize; height: _buttonSize }
+                        }
+
+                        // Zoom Controls
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: _spacing
+
+                            QGCButton {
+                                text: qsTr("Zoom+")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.zoomIn()
+                            }
+
+                            QGCButton {
+                                text: qsTr("Zoom-")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                autoRepeat: true
+                                autoRepeatDelay: 300
+                                autoRepeatInterval: 200
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.zoomOut()
+                            }
+                        }
+
+                        // Center Controls
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: _spacing
+
+                            QGCButton {
+                                text: qsTr("Center")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerCamera()
+                            }
+
+                            QGCButton {
+                                text: qsTr("Tilt")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerTiltOnly()
+                            }
+                        }
+
+                        // Thermal Controls
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: _spacing
+
+                            QGCButton {
+                                text: qsTr("Palette")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.cyclePalette()
+                            }
+
+                            QGCButton {
+                                text: qsTr("Vert")
+                                Layout.preferredWidth: _buttonSize * 1.5
+                                Layout.preferredHeight: _buttonSize * 0.8
+                                enabled: widgetRect.isConnected
+                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.sendVertCommand()
+                            }
+                        }
+
+                        // Connection Status Indicator
+                        QGCLabel {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: widgetRect.isConnected ? qsTr("Connected") : qsTr("Disconnected")
+                            font.pointSize: ScreenTools.smallFontPointSize
+                            color: widgetRect.isConnected ? qgcPal.colorGreen : qgcPal.colorOrange
+                        }
+                    }
+                }
+            }
+        }
 
         z: QGroundControl.zOrderWidgets
     }
