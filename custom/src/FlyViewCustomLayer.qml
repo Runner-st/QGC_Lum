@@ -150,6 +150,7 @@ Item {
                                 width: widgetRect.buttonSize
                                 height: widgetRect.buttonSize
                                 text: "◀"
+                                font.pointSize: ScreenTools.defaultFontPointSize * 2
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
                                 autoRepeatDelay: 300
@@ -163,6 +164,7 @@ Item {
                                 width: widgetRect.buttonSize
                                 height: widgetRect.buttonSize
                                 text: "▶"
+                                font.pointSize: ScreenTools.defaultFontPointSize * 2
                                 enabled: widgetRect.isConnected
                                 autoRepeat: true
                                 autoRepeatDelay: 300
@@ -257,14 +259,6 @@ Item {
                                 enabled: widgetRect.isConnected
                                 onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.sendVertCommand()
                             }
-                        }
-
-                        // Connection Status Indicator
-                        QGCLabel {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: widgetRect.isConnected ? qsTr("Connected") : qsTr("Disconnected")
-                            font.pointSize: ScreenTools.smallFontPointSize
-                            color: widgetRect.isConnected ? qgcPal.colorGreen : qgcPal.colorOrange
                         }
                     }
                 }
