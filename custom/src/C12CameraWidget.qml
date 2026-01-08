@@ -80,6 +80,7 @@ Rectangle {
                 width: _buttonSize
                 height: _buttonSize
                 text: "◀"
+                font.pointSize: ScreenTools.defaultFontPointSize * 2
                 enabled: isConnected
                 autoRepeat: true
                 autoRepeatDelay: 300
@@ -94,6 +95,7 @@ Rectangle {
                 width: _buttonSize
                 height: _buttonSize
                 text: "▶"
+                font.pointSize: ScreenTools.defaultFontPointSize * 2
                 enabled: isConnected
                 autoRepeat: true
                 autoRepeatDelay: 300
@@ -189,14 +191,6 @@ Rectangle {
                 enabled: isConnected
                 onClicked: if (c12Controller) c12Controller.sendVertCommand()
             }
-        }
-
-        // Connection Status Indicator
-        QGCLabel {
-            Layout.alignment: Qt.AlignHCenter
-            text: isConnected ? qsTr("Connected") : qsTr("Disconnected")
-            font.pointSize: ScreenTools.smallFontPointSize
-            color: isConnected ? qgcPal.colorGreen : qgcPal.colorOrange
         }
     }
 }

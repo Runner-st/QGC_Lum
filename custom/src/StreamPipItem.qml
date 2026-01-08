@@ -18,6 +18,7 @@ Item {
 
     property string streamUrl: ""
     property string streamName: ""
+    property string cameraType: ""
     property int streamIndex: -1
     property var linksManager: null
 
@@ -32,13 +33,24 @@ Item {
     }
 
     // Helper function to add low-latency options to RTSP URLs
+    // For C12 cameras, use TCP transport to allow multiple simultaneous connections
     function makeLowLatencyUrl(url) {
         if (!url || url.length === 0) return url
         if (!url.toLowerCase().startsWith("rtsp://")) return url
 
-        // Add FFmpeg low-latency options for RTSP streams
-        var separator = url.indexOf("?") >= 0 ? "&" : "?"
-        return url + separator + "rtsp_transport=udp&buffer_size=0"
+        // C12 cameras need TCP transport for PIP (multiple connections)
+        var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+
+        if (isC12) {
+            // Use TCP transport with minimal buffer for C12 cameras
+            console.log("PIP: Using TCP transport for C12 camera: " + root.streamName)
+            var separator = url.indexOf("?") >= 0 ? "&" : "?"
+            return url + separator + "rtsp_transport=tcp&buffer_size=0"
+        } else {
+            // Use UDP for other cameras (lower latency)
+            var separator = url.indexOf("?") >= 0 ? "&" : "?"
+            return url + separator + "rtsp_transport=udp&buffer_size=0"
+        }
     }
 
     // Retry timer for failed connections

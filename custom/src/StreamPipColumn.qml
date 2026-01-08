@@ -23,6 +23,7 @@ Item {
     readonly property var _activeLink: _linksManager ? _linksManager.activeLink : null
     readonly property var _streamUrls: _linksManager ? _linksManager.activeStreamUrls : []
     readonly property var _streamNames: _linksManager ? _linksManager.activeStreamNames : []
+    readonly property var _cameraTypes: _linksManager ? _linksManager.activeCameraTypes : []
     readonly property int _mainStreamIndex: _linksManager ? _linksManager.mainStreamIndex : 0
 
     // Calculate number of secondary streams (exclude main stream)
@@ -62,6 +63,7 @@ Item {
                     width: root._pipWidth
                     streamUrl: _streamUrls[index] || ""
                     streamName: _streamNames[index] || qsTr("Stream %1").arg(index + 1)
+                    cameraType: _cameraTypes[index] || ""
                     streamIndex: index
                     linksManager: _linksManager
                 }

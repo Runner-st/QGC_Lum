@@ -30,6 +30,7 @@ class LinksManagerController : public QObject
     // Video stream properties for active link
     Q_PROPERTY(QStringList activeStreamNames READ activeStreamNames NOTIFY activeStreamsChanged)
     Q_PROPERTY(QStringList activeStreamUrls READ activeStreamUrls NOTIFY activeStreamsChanged)
+    Q_PROPERTY(QStringList activeCameraTypes READ activeCameraTypes NOTIFY activeStreamsChanged)
     Q_PROPERTY(int mainStreamIndex READ mainStreamIndex WRITE setMainStreamIndex NOTIFY mainStreamIndexChanged)
 
     // Servo buttons for active link
@@ -46,6 +47,7 @@ public:
 
     QStringList activeStreamNames() const { return _activeStreamNames; }
     QStringList activeStreamUrls() const { return _activeStreamUrls; }
+    QStringList activeCameraTypes() const { return _activeCameraTypes; }
     QVariantList activeServoButtons() const { return _activeServoButtons; }
 
     int mainStreamIndex() const { return _mainStreamIndex; }
