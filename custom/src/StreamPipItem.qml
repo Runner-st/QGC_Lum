@@ -32,20 +32,37 @@ Item {
         _isExpanded = expanded
     }
 
+    // Watch for stream URL changes and reconnect appropriately
+    onStreamUrlChanged: {
+        if (streamUrl.length > 0) {
+            mediaPlayer.stop()
+            mediaPlayer.source = ""
+
+            var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+            if (isC12) {
+                console.log("PIP C12: Stream URL changed, delaying reconnection to: " + streamName)
+                delayedStartTimer.start()
+            } else {
+                mediaPlayer.source = makeLowLatencyUrl(streamUrl)
+                mediaPlayer.play()
+            }
+        }
+    }
+
     // Helper function to add low-latency options to RTSP URLs
-    // For C12 cameras, use TCP transport to allow multiple simultaneous connections
+    // For C12 cameras, pass URL without modifications (like VLC does)
     function makeLowLatencyUrl(url) {
         if (!url || url.length === 0) return url
         if (!url.toLowerCase().startsWith("rtsp://")) return url
 
-        // C12 cameras need TCP transport for PIP (multiple connections)
+        // C12 cameras support multiple connections
         var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
 
         if (isC12) {
-            // Use TCP transport with minimal buffer for C12 cameras
-            console.log("PIP: Using TCP transport for C12 camera: " + root.streamName)
-            var separator = url.indexOf("?") >= 0 ? "&" : "?"
-            return url + separator + "rtsp_transport=tcp&buffer_size=0"
+            // For C12: Pass URL without modifications - Qt/FFmpeg will auto-negotiate
+            // VLC connects successfully this way, so we match that behavior
+            console.log("PIP C12: Connecting to raw URL: " + url)
+            return url
         } else {
             // Use UDP for other cameras (lower latency)
             var separator = url.indexOf("?") >= 0 ? "&" : "?"
@@ -58,15 +75,22 @@ Item {
         id: retryTimer
         interval: 3000  // Retry every 3 seconds for faster reconnection
         repeat: true
-        running: root.streamUrl.length > 0 && mediaPlayer.playbackState !== MediaPlayer.PlayingState && _isExpanded
+        running: root.streamUrl.length > 0 && mediaPlayer.playbackState !== MediaPlayer.PlayingState && _isExpanded && !delayedStartTimer.running
 
         onTriggered: {
             if (root.streamUrl.length > 0) {
                 console.log("Retrying stream: " + root.streamName)
                 mediaPlayer.stop()
                 mediaPlayer.source = ""
-                mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
-                mediaPlayer.play()
+                var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+                if (isC12) {
+                    // For C12, use delayed retry
+                    delayedStartTimer.interval = 2000
+                    delayedStartTimer.start()
+                } else {
+                    mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
+                    mediaPlayer.play()
+                }
             }
         }
     }
@@ -74,7 +98,11 @@ Item {
     // Connection timeout - force retry if stuck in loading state
     Timer {
         id: connectionTimeoutTimer
-        interval: 5000  // 5 second connection timeout
+        // C12 cameras may need more time for RTSP session negotiation with multiple connections
+        interval: {
+            var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+            return isC12 ? 10000 : 5000  // 10 seconds for C12, 5 seconds for others
+        }
         repeat: false
         running: root.streamUrl.length > 0 && mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia && _isExpanded
 
@@ -85,16 +113,45 @@ Item {
         }
     }
 
+    // Delayed start timer for C12 cameras - let main stream establish first
+    Timer {
+        id: delayedStartTimer
+        interval: 2000  // 2 second delay
+        repeat: false
+        running: false
+        onTriggered: {
+            console.log("PIP C12: Starting delayed connection to: " + root.streamName)
+            mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
+            mediaPlayer.play()
+        }
+    }
+
     // Video player for this stream
     MediaPlayer {
         id: mediaPlayer
-        source: root.makeLowLatencyUrl(root.streamUrl)
         videoOutput: videoOutput
         autoPlay: true
 
+        Component.onCompleted: {
+            // For C12 cameras, delay PIP connection to let main stream establish first
+            var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+            if (isC12 && root.streamUrl.length > 0) {
+                console.log("PIP C12: Delaying connection for " + root.streamName)
+                delayedStartTimer.start()
+            } else {
+                source = root.makeLowLatencyUrl(root.streamUrl)
+                if (source.toString().length > 0) {
+                    play()
+                }
+            }
+        }
+
         onSourceChanged: {
             if (source.toString().length > 0) {
-                play()
+                var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+                if (!isC12) {  // Only auto-play for non-C12 (C12 handled by timer)
+                    play()
+                }
             }
         }
 
