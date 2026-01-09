@@ -28,6 +28,10 @@ class CameraConfiguration : public QObject
     Q_PROPERTY(QString c12Rtsp1Suffix READ c12Rtsp1Suffix WRITE setC12Rtsp1Suffix NOTIFY c12Rtsp1SuffixChanged)
     Q_PROPERTY(QString c12Rtsp2Suffix READ c12Rtsp2Suffix WRITE setC12Rtsp2Suffix NOTIFY c12Rtsp2SuffixChanged)
     Q_PROPERTY(int c12ControlPort READ c12ControlPort WRITE setC12ControlPort NOTIFY c12ControlPortChanged)
+    Q_PROPERTY(QString topotekCameraIp READ topotekCameraIp WRITE setTopotekCameraIp NOTIFY topotekCameraIpChanged)
+    Q_PROPERTY(QString topotekRtsp1Suffix READ topotekRtsp1Suffix WRITE setTopotekRtsp1Suffix NOTIFY topotekRtsp1SuffixChanged)
+    Q_PROPERTY(QString topotekRtsp2Suffix READ topotekRtsp2Suffix WRITE setTopotekRtsp2Suffix NOTIFY topotekRtsp2SuffixChanged)
+    Q_PROPERTY(int topotekControlPort READ topotekControlPort WRITE setTopotekControlPort NOTIFY topotekControlPortChanged)
 
 public:
     enum CameraType {
@@ -63,6 +67,18 @@ public:
     int c12ControlPort() const { return _c12ControlPort; }
     void setC12ControlPort(int port);
 
+    QString topotekCameraIp() const { return _topotekCameraIp; }
+    void setTopotekCameraIp(const QString &ip);
+
+    QString topotekRtsp1Suffix() const { return _topotekRtsp1Suffix; }
+    void setTopotekRtsp1Suffix(const QString &suffix);
+
+    QString topotekRtsp2Suffix() const { return _topotekRtsp2Suffix; }
+    void setTopotekRtsp2Suffix(const QString &suffix);
+
+    int topotekControlPort() const { return _topotekControlPort; }
+    void setTopotekControlPort(int port);
+
     Q_INVOKABLE void applyPreset();
 
     bool isEmpty() const;
@@ -89,6 +105,10 @@ signals:
     void c12Rtsp1SuffixChanged();
     void c12Rtsp2SuffixChanged();
     void c12ControlPortChanged();
+    void topotekCameraIpChanged();
+    void topotekRtsp1SuffixChanged();
+    void topotekRtsp2SuffixChanged();
+    void topotekControlPortChanged();
 
 private:
     QString _name;
@@ -99,4 +119,8 @@ private:
     QString _c12Rtsp1Suffix = QStringLiteral("554/stream=1");
     QString _c12Rtsp2Suffix = QStringLiteral("555/stream=2");
     int _c12ControlPort = 5000;
+    QString _topotekCameraIp = QStringLiteral("192.168.144.108");
+    QString _topotekRtsp1Suffix = QStringLiteral("554/stream=0");
+    QString _topotekRtsp2Suffix = QStringLiteral("554/stream=1");
+    int _topotekControlPort = 9003;
 };

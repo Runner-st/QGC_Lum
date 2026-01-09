@@ -219,11 +219,126 @@ Rectangle {
             }
         }
 
+        // Topotek Camera Configuration (only visible when TopotekKHP290A609 selected)
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: ScreenTools.defaultFontPixelHeight / 4
+            visible: cameraConfig && cameraConfig.cameraType === 3 // TopotekKHP290A609
+
+            QGCLabel {
+                text: qsTr("Topotek Camera Settings")
+                font.bold: true
+            }
+
+            // Camera IP
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("Camera IP:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: topotekIpField
+                    Layout.fillWidth: true
+                    placeholderText: "192.168.144.108"
+                    text: cameraConfig ? cameraConfig.topotekCameraIp : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.topotekCameraIp = text
+                        }
+                    }
+                }
+            }
+
+            // RTSP Stream 1 Suffix
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("RTSP1 Suffix:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: topotekRtsp1Field
+                    Layout.fillWidth: true
+                    placeholderText: "554/stream=0"
+                    text: cameraConfig ? cameraConfig.topotekRtsp1Suffix : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.topotekRtsp1Suffix = text
+                        }
+                    }
+                }
+            }
+
+            // RTSP Stream 2 Suffix
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("RTSP2 Suffix:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: topotekRtsp2Field
+                    Layout.fillWidth: true
+                    placeholderText: "554/stream=1"
+                    text: cameraConfig ? cameraConfig.topotekRtsp2Suffix : ""
+                    onTextChanged: {
+                        if (cameraConfig) {
+                            cameraConfig.topotekRtsp2Suffix = text
+                        }
+                    }
+                }
+            }
+
+            // Control Port
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    text: qsTr("Control Port:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 12
+                }
+
+                QGCTextField {
+                    id: topotekPortField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 8
+                    placeholderText: "9003"
+                    text: cameraConfig ? cameraConfig.topotekControlPort : ""
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 65535 }
+                    onTextChanged: {
+                        if (cameraConfig && text !== "") {
+                            cameraConfig.topotekControlPort = parseInt(text)
+                        }
+                    }
+                }
+            }
+
+            // Info Label
+            QGCLabel {
+                Layout.fillWidth: true
+                text: qsTr("RTSP URLs will be auto-generated: rtsp://[IP]:[Suffix]")
+                font.pointSize: ScreenTools.smallFontPointSize
+                color: qgcPal.textFieldText
+                wrapMode: Text.WordWrap
+            }
+        }
+
         // Stream 1
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
-            visible: cameraConfig && cameraConfig.cameraType !== 2  // Hide for C12
+            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek
 
             QGCLabel {
                 text: qsTr("Stream 1")
@@ -281,7 +396,7 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
-            visible: cameraConfig && cameraConfig.cameraType !== 2  // Hide for C12
+            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek
 
             QGCLabel {
                 text: qsTr("Stream 2")
@@ -339,9 +454,15 @@ Rectangle {
         QGCLabel {
             Layout.fillWidth: true
             visible: _isPresetCamera
-            text: cameraConfig && cameraConfig.cameraType === 2
-                ? qsTr("RTSP URLs are auto-generated from C12 settings above")
-                : qsTr("RTSP URLs are preset for this camera type")
+            text: {
+                if (cameraConfig && cameraConfig.cameraType === 2) {
+                    return qsTr("RTSP URLs are auto-generated from C12 settings above")
+                } else if (cameraConfig && cameraConfig.cameraType === 3) {
+                    return qsTr("RTSP URLs are auto-generated from Topotek settings above")
+                } else {
+                    return qsTr("RTSP URLs are preset for this camera type")
+                }
+            }
             font.pointSize: ScreenTools.smallFontPointSize
             color: qgcPal.textFieldText
             wrapMode: Text.WordWrap
