@@ -16,6 +16,7 @@
 #include "QGCCorePlugin.h"
 #include "LinksManager/LinksManagerController.h"
 #include "Camera/C12Controller.h"
+#include "Camera/TopotekController.h"
 
 class QQmlApplicationEngine;
 
@@ -35,6 +36,7 @@ class ServoControlPlugin : public QGCCorePlugin
     Q_PROPERTY(QVariantList servoButtons READ servoButtons NOTIFY servoButtonsChanged FINAL)
     Q_PROPERTY(LinksManagerController* linksManager READ linksManager CONSTANT)
     Q_PROPERTY(C12Controller* c12Controller READ c12Controller CONSTANT)
+    Q_PROPERTY(TopotekController* topotekController READ topotekController CONSTANT)
 
 public:
     explicit ServoControlPlugin(QObject *parent = nullptr);
@@ -45,6 +47,7 @@ public:
     QVariantList servoButtons() const;
     LinksManagerController* linksManager() const { return _linksManager; }
     C12Controller* c12Controller() const { return _c12Controller; }
+    TopotekController* topotekController() const { return _topotekController; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -59,6 +62,7 @@ signals:
 
 private slots:
     void _updateC12ControlAddress();
+    void _updateTopotekControlAddress();
 
 private:
     struct ServoButtonDefinition {
@@ -81,4 +85,5 @@ private:
     QQmlApplicationEngine *_qmlEngine = nullptr;
     LinksManagerController *_linksManager = nullptr;
     C12Controller *_c12Controller = nullptr;
+    TopotekController *_topotekController = nullptr;
 };

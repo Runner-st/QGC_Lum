@@ -10,6 +10,8 @@ set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/TopotekController.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/TopotekController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/LinksManagerController.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ManagedLinkConfiguration.cc

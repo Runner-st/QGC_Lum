@@ -9,9 +9,12 @@
 
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
+import QGroundControl.C12Camera
+import QGroundControl.TopotekCamera
 
 Item {
     id: root
@@ -26,6 +29,7 @@ Item {
     readonly property var _linksManager: _hasCorePlugin ? QGroundControl.corePlugin.linksManager : null
     readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
     readonly property bool _hasC12Camera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 2
+    readonly property bool _hasTopotekCamera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 3
 
     function _triggerServo(channel, pulseWidth) {
         if (!_hasVehicle || !_hasCorePlugin) {
@@ -41,7 +45,7 @@ Item {
         leftEdgeCenterInset: parentToolInsets.leftEdgeCenterInset
         leftEdgeBottomInset: parentToolInsets.leftEdgeBottomInset
         rightEdgeTopInset: parentToolInsets.rightEdgeTopInset
-        rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, c12Widget.active && c12Widget.item ? c12Widget.item.width + _margin : 0)
+        rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, cameraWidgetContainer.visible ? cameraWidgetContainer.width + _margin : 0)
         rightEdgeBottomInset: parentToolInsets.rightEdgeBottomInset
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
@@ -76,195 +80,43 @@ Item {
         }
     }
 
-    // C12 Camera Control Widget
-    Loader {
-        id: c12Widget
+    // Camera Widget Container - holds both C12 and Topotek widgets
+    Rectangle {
+        id: cameraWidgetContainer
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: _margin
 
-        active: _hasC12Camera
-        visible: _hasC12Camera
+        visible: _hasC12Camera || _hasTopotekCamera
+        width: widgetColumn.width
+        height: widgetColumn.height
+        color: "transparent"
 
-        sourceComponent: Component {
-            Item {
-                width: widgetRect.width
-                height: widgetRect.height
+        z: QGroundControl.zOrderWidgets
 
-                Rectangle {
-                    id: widgetRect
-                    width: mainColumn.width + (_margin * 2)
-                    height: mainColumn.height + (_margin * 2)
-                    radius: ScreenTools.defaultFontPixelWidth * 0.5
-                    color: qgcPal.window
-                    border.color: qgcPal.text
-                    border.width: 1
-                    opacity: 0.9
+        Column {
+            id: widgetColumn
+            spacing: _margin
 
-                    property var c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
-                    property bool isConnected: c12Controller ? c12Controller.isConnected : false
-                    property real buttonSize: ScreenTools.defaultFontPixelHeight * 2.5
-                    property real itemSpacing: ScreenTools.defaultFontPixelWidth * 0.25
+            // C12 Camera Widget
+            Loader {
+                id: c12WidgetLoader
+                active: _hasC12Camera
+                visible: _hasC12Camera
+                sourceComponent: C12CameraWidget {
+                    c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
+                }
+            }
 
-                    QGCPalette { id: qgcPal; colorGroupEnabled: true }
-
-                    ColumnLayout {
-                        id: mainColumn
-                        anchors.centerIn: parent
-                        spacing: widgetRect.itemSpacing
-
-                        // Header
-                        QGCLabel {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: qsTr("C12 Camera")
-                            font.pointSize: ScreenTools.smallFontPointSize
-                            font.bold: true
-                        }
-
-                        // Movement Controls (Joystick pattern)
-                        Grid {
-                            Layout.alignment: Qt.AlignHCenter
-                            columns: 3
-                            rows: 3
-                            columnSpacing: widgetRect.itemSpacing
-                            rowSpacing: widgetRect.itemSpacing
-
-                            // Top row: Up button centered
-                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
-
-                            QGCButton {
-                                width: widgetRect.buttonSize
-                                height: widgetRect.buttonSize
-                                text: "▲"
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveUp()
-                            }
-
-                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
-
-                            // Middle row: Left and Right buttons
-                            QGCButton {
-                                width: widgetRect.buttonSize
-                                height: widgetRect.buttonSize
-                                text: "◀"
-                                font.pointSize: ScreenTools.defaultFontPointSize * 2
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveLeft()
-                            }
-
-                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
-
-                            QGCButton {
-                                width: widgetRect.buttonSize
-                                height: widgetRect.buttonSize
-                                text: "▶"
-                                font.pointSize: ScreenTools.defaultFontPointSize * 2
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveRight()
-                            }
-
-                            // Bottom row: Down button centered
-                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
-
-                            QGCButton {
-                                width: widgetRect.buttonSize
-                                height: widgetRect.buttonSize
-                                text: "▼"
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.moveDown()
-                            }
-
-                            Item { width: widgetRect.buttonSize; height: widgetRect.buttonSize }
-                        }
-
-                        // Zoom Controls
-                        RowLayout {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: widgetRect.itemSpacing
-
-                            QGCButton {
-                                text: qsTr("Zoom+")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.zoomIn()
-                            }
-
-                            QGCButton {
-                                text: qsTr("Zoom-")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                autoRepeat: true
-                                autoRepeatDelay: 300
-                                autoRepeatInterval: 200
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.zoomOut()
-                            }
-                        }
-
-                        // Center Controls
-                        RowLayout {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: widgetRect.itemSpacing
-
-                            QGCButton {
-                                text: qsTr("Center")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerCamera()
-                            }
-
-                            QGCButton {
-                                text: qsTr("Tilt")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.centerTiltOnly()
-                            }
-                        }
-
-                        // Thermal Controls
-                        RowLayout {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: widgetRect.itemSpacing
-
-                            QGCButton {
-                                text: qsTr("Palette")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.cyclePalette()
-                            }
-
-                            QGCButton {
-                                text: qsTr("Vert")
-                                Layout.preferredWidth: widgetRect.buttonSize * 1.5
-                                Layout.preferredHeight: widgetRect.buttonSize * 0.8
-                                enabled: widgetRect.isConnected
-                                onClicked: if (widgetRect.c12Controller) widgetRect.c12Controller.sendVertCommand()
-                            }
-                        }
-                    }
+            // Topotek Camera Widget
+            Loader {
+                id: topotekWidgetLoader
+                active: _hasTopotekCamera
+                visible: _hasTopotekCamera
+                sourceComponent: TopotekCameraWidget {
+                    topotekController: _hasCorePlugin ? QGroundControl.corePlugin.topotekController : null
                 }
             }
         }
-
-        z: QGroundControl.zOrderWidgets
     }
 }

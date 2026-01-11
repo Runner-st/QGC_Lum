@@ -13,6 +13,7 @@
         <file alias="QGroundControl/FlightDisplay/StreamPipColumn.qml">src/StreamPipColumn.qml</file>
         <file alias="QGroundControl/FlightDisplay/StreamPipItem.qml">src/StreamPipItem.qml</file>
         <file alias="QGroundControl/FlightDisplay/C12CameraWidget.qml">src/C12CameraWidget.qml</file>
+        <file alias="QGroundControl/FlightDisplay/TopotekCameraWidget.qml">src/TopotekCameraWidget.qml</file>
     </qresource>
 	<qresource prefix="/res">
           <file alias="SplashScreen">res/SplashScreen.png</file>

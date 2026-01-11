@@ -56,6 +56,13 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     connect(_linksManager, &LinksManagerController::activeLinkChanged,
             this, &ServoControlPlugin::_updateC12ControlAddress);
 
+    // Initialize Topotek Controller
+    _topotekController = new TopotekController(this);
+
+    // Connect to active link changes to update Topotek control address
+    connect(_linksManager, &LinksManagerController::activeLinkChanged,
+            this, &ServoControlPlugin::_updateTopotekControlAddress);
+
     // Register QML types for Links Manager
     qmlRegisterUncreatableType<LinksManagerController>(
         "QGroundControl.LinksManager", 1, 0,
@@ -77,6 +84,11 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     qmlRegisterUncreatableType<C12Controller>(
         "QGroundControl.C12Camera", 1, 0,
         "C12Controller", "Reference only");
+
+    // Register TopotekController QML type
+    qmlRegisterUncreatableType<TopotekController>(
+        "QGroundControl.TopotekCamera", 1, 0,
+        "TopotekController", "Reference only");
 }
 
 ServoControlPlugin::~ServoControlPlugin()
@@ -362,5 +374,29 @@ void ServoControlPlugin::_updateC12ControlAddress()
         _c12Controller->setControlAddress(controlAddress);
     } else {
         _c12Controller->setControlAddress(QString());
+    }
+}
+
+void ServoControlPlugin::_updateTopotekControlAddress()
+{
+    if (!_linksManager || !_topotekController) {
+        return;
+    }
+
+    ManagedLinkConfiguration *activeLink = _linksManager->activeLink();
+    if (!activeLink) {
+        _topotekController->setControlAddress(QString());
+        return;
+    }
+
+    // Check if camera1 is configured as Topotek
+    CameraConfiguration *camera1 = activeLink->camera1();
+    if (camera1 && camera1->cameraType() == CameraConfiguration::TopotekKHP290A609) {
+        QString controlAddress = QStringLiteral("%1:%2")
+            .arg(camera1->topotekCameraIp())
+            .arg(camera1->topotekControlPort());
+        _topotekController->setControlAddress(controlAddress);
+    } else {
+        _topotekController->setControlAddress(QString());
     }
 }
