@@ -123,6 +123,7 @@ Rectangle {
                 height: _buttonSize
                 text: "⊙"
                 font.pointSize: ScreenTools.largeFontPointSize
+                font.bold: true
                 enabled: isConnected
                 onClicked: if (topotekController) topotekController.centerGimbal()
             }
@@ -152,60 +153,94 @@ Rectangle {
         }
 
         // Day Zoom Controls
-        RowLayout {
+        Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            spacing: _spacing
+            color: "transparent"
+            border.color: qgcPal.text
+            border.width: 1
+            radius: ScreenTools.defaultFontPixelWidth * 0.25
+            width: dayZoomColumn.width + (_spacing * 2)
+            height: dayZoomColumn.height + (_spacing * 2)
 
-            QGCLabel {
-                text: qsTr("Day Zoom:")
-                font.pointSize: ScreenTools.smallFontPointSize
-            }
+            ColumnLayout {
+                id: dayZoomColumn
+                anchors.centerIn: parent
+                spacing: _spacing * 0.5
 
-            ContinuousButton {
-                buttonWidth: _buttonSize
-                buttonHeight: _buttonSize * 0.7
-                iconText: "+"
-                buttonEnabled: isConnected
-                onStartCommand: if (topotekController) topotekController.dayZoomIn()
-                onStopCommand: if (topotekController) topotekController.stopDayZoom()
-            }
+                QGCLabel {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Day Zoom")
+                    font.pointSize: ScreenTools.smallFontPointSize
+                }
 
-            ContinuousButton {
-                buttonWidth: _buttonSize
-                buttonHeight: _buttonSize * 0.7
-                iconText: "-"
-                buttonEnabled: isConnected
-                onStartCommand: if (topotekController) topotekController.dayZoomOut()
-                onStopCommand: if (topotekController) topotekController.stopDayZoom()
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: _spacing
+
+                    ContinuousButton {
+                        buttonWidth: _buttonSize
+                        buttonHeight: _buttonSize * 0.7
+                        iconText: "+"
+                        buttonEnabled: isConnected
+                        onStartCommand: if (topotekController) topotekController.dayZoomIn()
+                        onStopCommand: if (topotekController) topotekController.stopDayZoom()
+                    }
+
+                    ContinuousButton {
+                        buttonWidth: _buttonSize
+                        buttonHeight: _buttonSize * 0.7
+                        iconText: "-"
+                        buttonEnabled: isConnected
+                        onStartCommand: if (topotekController) topotekController.dayZoomOut()
+                        onStopCommand: if (topotekController) topotekController.stopDayZoom()
+                    }
+                }
             }
         }
 
         // Thermal Zoom Controls
-        RowLayout {
+        Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            spacing: _spacing
+            color: "transparent"
+            border.color: qgcPal.text
+            border.width: 1
+            radius: ScreenTools.defaultFontPixelWidth * 0.25
+            width: thermalZoomColumn.width + (_spacing * 2)
+            height: thermalZoomColumn.height + (_spacing * 2)
 
-            QGCLabel {
-                text: qsTr("IR Zoom:")
-                font.pointSize: ScreenTools.smallFontPointSize
-            }
+            ColumnLayout {
+                id: thermalZoomColumn
+                anchors.centerIn: parent
+                spacing: _spacing * 0.5
 
-            ContinuousButton {
-                buttonWidth: _buttonSize
-                buttonHeight: _buttonSize * 0.7
-                iconText: "+"
-                buttonEnabled: isConnected
-                onStartCommand: if (topotekController) topotekController.thermalZoomIn()
-                onStopCommand: if (topotekController) topotekController.stopThermalZoom()
-            }
+                QGCLabel {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Thermal Zoom")
+                    font.pointSize: ScreenTools.smallFontPointSize
+                }
 
-            ContinuousButton {
-                buttonWidth: _buttonSize
-                buttonHeight: _buttonSize * 0.7
-                iconText: "-"
-                buttonEnabled: isConnected
-                onStartCommand: if (topotekController) topotekController.thermalZoomOut()
-                onStopCommand: if (topotekController) topotekController.stopThermalZoom()
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: _spacing
+
+                    ContinuousButton {
+                        buttonWidth: _buttonSize
+                        buttonHeight: _buttonSize * 0.7
+                        iconText: "+"
+                        buttonEnabled: isConnected
+                        onStartCommand: if (topotekController) topotekController.thermalZoomIn()
+                        onStopCommand: if (topotekController) topotekController.stopThermalZoom()
+                    }
+
+                    ContinuousButton {
+                        buttonWidth: _buttonSize
+                        buttonHeight: _buttonSize * 0.7
+                        iconText: "-"
+                        buttonEnabled: isConnected
+                        onStartCommand: if (topotekController) topotekController.thermalZoomOut()
+                        onStopCommand: if (topotekController) topotekController.stopThermalZoom()
+                    }
+                }
             }
         }
 
@@ -276,29 +311,46 @@ Rectangle {
         }
 
         // Defog controls
-        RowLayout {
+        Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            spacing: _spacing
+            color: "transparent"
+            border.color: qgcPal.text
+            border.width: 1
+            radius: ScreenTools.defaultFontPixelWidth * 0.25
+            width: defogColumn.width + (_spacing * 2)
+            height: defogColumn.height + (_spacing * 2)
 
-            QGCLabel {
-                text: qsTr("Defog:")
-                font.pointSize: ScreenTools.smallFontPointSize
-            }
+            ColumnLayout {
+                id: defogColumn
+                anchors.centerIn: parent
+                spacing: _spacing * 0.5
 
-            QGCButton {
-                text: "+"
-                enabled: isConnected
-                Layout.preferredWidth: _buttonSize
-                Layout.preferredHeight: _buttonSize * 0.7
-                onClicked: if (topotekController) topotekController.increaseDefog()
-            }
+                QGCLabel {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: qsTr("Defog")
+                    font.pointSize: ScreenTools.smallFontPointSize
+                }
 
-            QGCButton {
-                text: "-"
-                enabled: isConnected
-                Layout.preferredWidth: _buttonSize
-                Layout.preferredHeight: _buttonSize * 0.7
-                onClicked: if (topotekController) topotekController.decreaseDefog()
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    spacing: _spacing
+
+                    QGCButton {
+                        text: "+"
+                        enabled: isConnected
+                        width: _buttonSize
+                        height: _buttonSize * 0.7
+                        onClicked: if (topotekController) topotekController.increaseDefog()
+                    }
+
+                    QGCButton {
+                        text: "-"
+                        enabled: isConnected
+                        width: _buttonSize
+                        height: _buttonSize * 0.7
+                        onClicked: if (topotekController) topotekController.decreaseDefog()
+                    }
+                }
             }
         }
     }
@@ -322,8 +374,6 @@ Rectangle {
         height: buttonHeight
         radius: ScreenTools.defaultFontPixelWidth * 0.25
         color: buttonEnabled ? (mouseArea.pressed ? qgcPal.buttonHighlight : qgcPal.button) : qgcPal.windowShade
-        border.color: qgcPal.text
-        border.width: 1
 
         property bool isHolding: false
         property real pressStartTime: 0
