@@ -13,8 +13,6 @@ import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
-import QGroundControl.C12Camera
-import QGroundControl.TopotekCamera
 
 Item {
     id: root
@@ -23,6 +21,12 @@ Item {
     property var totalToolInsets: toolInsets
     property var mapControl
 
+    Component.onCompleted: {
+        console.log("FlyViewCustomLayer loaded")
+        console.log("_hasCorePlugin:", _hasCorePlugin)
+        console.log("_linksManager:", _linksManager)
+    }
+
     readonly property real _margin: ScreenTools.defaultFontPixelWidth
     readonly property bool _hasVehicle: QGroundControl.multiVehicleManager.activeVehicle !== null
     readonly property bool _hasCorePlugin: QGroundControl.corePlugin !== null && QGroundControl.corePlugin !== undefined
@@ -30,6 +34,34 @@ Item {
     readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
     readonly property bool _hasC12Camera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 2
     readonly property bool _hasTopotekCamera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 3
+
+    // Debug logging function
+    function debugWidgetState() {
+        console.log("=== WIDGET STATE DEBUG ===")
+        console.log("_hasActiveLink:", _hasActiveLink)
+        console.log("_hasC12Camera:", _hasC12Camera)
+        console.log("_hasTopotekCamera:", _hasTopotekCamera)
+
+        if (_linksManager && _linksManager.activeLink) {
+            console.log("Active link exists")
+            if (_linksManager.activeLink.camera1) {
+                console.log("camera1 exists")
+                console.log("camera1.cameraType:", _linksManager.activeLink.camera1.cameraType)
+                console.log("camera1.topotekCameraIp:", _linksManager.activeLink.camera1.topotekCameraIp)
+                console.log("camera1.topotekControlPort:", _linksManager.activeLink.camera1.topotekControlPort)
+            } else {
+                console.log("camera1 is NULL")
+            }
+        } else {
+            console.log("No active link or _linksManager")
+        }
+        console.log("==========================")
+    }
+
+    // Watch for changes
+    on_HasActiveLinkChanged: debugWidgetState()
+    on_HasC12CameraChanged: debugWidgetState()
+    on_HasTopotekCameraChanged: debugWidgetState()
 
     function _triggerServo(channel, pulseWidth) {
         if (!_hasVehicle || !_hasCorePlugin) {
@@ -103,8 +135,12 @@ Item {
                 id: c12WidgetLoader
                 active: _hasC12Camera
                 visible: _hasC12Camera
-                sourceComponent: C12CameraWidget {
-                    c12Controller: _hasCorePlugin ? QGroundControl.corePlugin.c12Controller : null
+                source: _hasC12Camera ? "C12CameraWidget.qml" : ""
+
+                onLoaded: {
+                    if (item && _hasCorePlugin) {
+                        item.c12Controller = QGroundControl.corePlugin.c12Controller
+                    }
                 }
             }
 
@@ -113,8 +149,12 @@ Item {
                 id: topotekWidgetLoader
                 active: _hasTopotekCamera
                 visible: _hasTopotekCamera
-                sourceComponent: TopotekCameraWidget {
-                    topotekController: _hasCorePlugin ? QGroundControl.corePlugin.topotekController : null
+                source: _hasTopotekCamera ? "TopotekCameraWidget.qml" : ""
+
+                onLoaded: {
+                    if (item && _hasCorePlugin) {
+                        item.topotekController = QGroundControl.corePlugin.topotekController
+                    }
                 }
             }
         }

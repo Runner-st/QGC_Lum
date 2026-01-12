@@ -13,7 +13,6 @@ import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
-import QGroundControl.ScreenTools
 
 // Topotek KHP290A609 Camera Control Widget
 // Provides PTZ, zoom, thermal controls with smart button behavior:
@@ -118,23 +117,14 @@ Rectangle {
                 onStopCommand: if (topotekController) topotekController.stopPanTilt()
             }
 
-            // Center button with icon
+            // Center button
             QGCButton {
                 width: _buttonSize
                 height: _buttonSize
+                text: "⊙"
+                font.pointSize: ScreenTools.largeFontPointSize
                 enabled: isConnected
                 onClicked: if (topotekController) topotekController.centerGimbal()
-
-                QGCColoredImage {
-                    anchors.centerIn: parent
-                    width: parent.width * 0.6
-                    height: parent.height * 0.6
-                    source: "/qmlimages/center.svg"
-                    sourceSize.height: height
-                    color: qgcPal.text
-                    fillMode: Image.PreserveAspectFit
-                    mipmap: true
-                }
             }
 
             ContinuousButton {
