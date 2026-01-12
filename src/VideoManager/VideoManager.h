@@ -71,6 +71,12 @@ public:
     bool hasOverrideUri() const { return !_overrideUri.isEmpty(); }
     QString overrideUri() const { return _overrideUri; }
 
+    // PIP receiver management for secondary video streams
+    Q_INVOKABLE VideoReceiver* createPipReceiver(const QString &name);
+    Q_INVOKABLE void destroyPipReceiver(VideoReceiver *receiver);
+    Q_INVOKABLE VideoReceiver* getPipReceiver(int index);
+    Q_INVOKABLE int pipReceiverCount() const;
+
     void init(QQuickWindow *rootWindow);
     void cleanup();
     bool autoStreamConfigured() const;
@@ -110,6 +116,7 @@ signals:
     void uvcVideoSourceIDChanged();
     void videoSizeChanged();
     void overrideUriChanged();
+    void pipReceiversChanged();
 
 private slots:
     void _communicationLostChanged(bool communicationLost);
@@ -129,6 +136,7 @@ private:
     static void _cleanupOldVideos();
 
     QList<VideoReceiver*> _videoReceivers;
+    QList<VideoReceiver*> _pipReceivers;
 
     SubtitleWriter *_subtitleWriter = nullptr;
     VideoSettings *_videoSettings = nullptr;

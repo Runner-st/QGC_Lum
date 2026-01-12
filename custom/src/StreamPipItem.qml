@@ -8,7 +8,7 @@
  ****************************************************************************/
 
 import QtQuick
-import QtMultimedia
+import org.freedesktop.gstreamer.Qt6GLVideoItem
 
 import QGroundControl
 import QGroundControl.Controls
@@ -21,6 +21,7 @@ Item {
     property string cameraType: ""
     property int streamIndex: -1
     property var linksManager: null
+    property var videoReceiver: null  // Assigned by StreamPipColumn
 
     // Hide/show state
     property bool _isExpanded: true
@@ -34,82 +35,96 @@ Item {
 
     // Watch for stream URL changes and reconnect appropriately
     onStreamUrlChanged: {
-        if (streamUrl.length > 0) {
-            mediaPlayer.stop()
-            mediaPlayer.source = ""
+        if (streamUrl.length > 0 && videoReceiver) {
+            console.log("PIP: Stream URL changed for " + streamName + " - stopping receiver")
+            videoReceiver.stop()
 
             var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
             if (isC12) {
-                console.log("PIP C12: Stream URL changed, delaying reconnection to: " + streamName)
+                console.log("PIP C12: Delaying reconnection to: " + streamName)
                 delayedStartTimer.start()
             } else {
-                mediaPlayer.source = makeLowLatencyUrl(streamUrl)
-                mediaPlayer.play()
+                // Update URI and start immediately
+                videoReceiver.setUri(streamUrl)
+                videoReceiver.setLowLatency(true)
+                var timeout = 5000
+                videoReceiver.start(timeout)
             }
         }
     }
 
-    // Helper function to add low-latency options to RTSP URLs
-    // For C12 cameras, pass URL without modifications (like VLC does)
-    function makeLowLatencyUrl(url) {
-        if (!url || url.length === 0) return url
-        if (!url.toLowerCase().startsWith("rtsp://")) return url
+    // Monitor videoReceiver assignment
+    onVideoReceiverChanged: {
+        if (videoReceiver) {
+            console.log("PIP: VideoReceiver assigned for " + streamName)
 
-        // C12 cameras support multiple connections
-        var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+            // Set object name for video sink discovery
+            videoItem.objectName = videoReceiver.name()
 
-        if (isC12) {
-            // For C12: Pass URL without modifications - Qt/FFmpeg will auto-negotiate
-            // VLC connects successfully this way, so we match that behavior
-            console.log("PIP C12: Connecting to raw URL: " + url)
-            return url
-        } else {
-            // Use UDP for other cameras (lower latency)
-            var separator = url.indexOf("?") >= 0 ? "&" : "?"
-            return url + separator + "rtsp_transport=udp&buffer_size=0"
+            // Configure receiver
+            videoReceiver.setUri(streamUrl)
+            videoReceiver.setCameraType(cameraType)
+            videoReceiver.setLowLatency(true)
+
+            // Start playback (with C12 delay if needed)
+            var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+            if (isC12 && streamUrl.length > 0) {
+                console.log("PIP C12: Delaying connection for " + streamName)
+                delayedStartTimer.start()
+            } else if (streamUrl.length > 0) {
+                var timeout = 5000
+                videoReceiver.start(timeout)
+                // Start decoding when receiver is ready
+                if (videoReceiver.sink()) {
+                    videoReceiver.startDecoding(videoReceiver.sink())
+                }
+            }
         }
     }
 
     // Retry timer for failed connections
     Timer {
         id: retryTimer
-        interval: 3000  // Retry every 3 seconds for faster reconnection
+        interval: 3000  // Retry every 3 seconds
         repeat: true
-        running: root.streamUrl.length > 0 && mediaPlayer.playbackState !== MediaPlayer.PlayingState && _isExpanded && !delayedStartTimer.running
+        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.streaming && _isExpanded && !delayedStartTimer.running
 
         onTriggered: {
-            if (root.streamUrl.length > 0) {
-                console.log("Retrying stream: " + root.streamName)
-                mediaPlayer.stop()
-                mediaPlayer.source = ""
+            if (root.streamUrl.length > 0 && videoReceiver) {
+                console.log("Retrying PIP stream: " + root.streamName)
+                videoReceiver.stop()
+
                 var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
                 if (isC12) {
                     // For C12, use delayed retry
                     delayedStartTimer.interval = 2000
                     delayedStartTimer.start()
                 } else {
-                    mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
-                    mediaPlayer.play()
+                    videoReceiver.setUri(root.streamUrl)
+                    videoReceiver.setLowLatency(true)
+                    var timeout = 5000
+                    videoReceiver.start(timeout)
                 }
             }
         }
     }
 
-    // Connection timeout - force retry if stuck in loading state
+    // Connection timeout - force retry if stuck
     Timer {
         id: connectionTimeoutTimer
-        // C12 cameras may need more time for RTSP session negotiation with multiple connections
+        // C12 cameras may need more time for RTSP session negotiation
         interval: {
             var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
             return isC12 ? 10000 : 5000  // 10 seconds for C12, 5 seconds for others
         }
         repeat: false
-        running: root.streamUrl.length > 0 && mediaPlayer.mediaStatus === MediaPlayer.LoadingMedia && _isExpanded
+        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.streaming && !videoReceiver.decoding && _isExpanded
 
         onTriggered: {
-            console.log("Connection timeout for stream: " + root.streamName + " - forcing retry")
-            mediaPlayer.stop()
-            mediaPlayer.source = ""
+            console.log("Connection timeout for PIP stream: " + root.streamName + " - forcing retry")
+            if (videoReceiver) {
+                videoReceiver.stop()
+            }
         }
     }
 
@@ -120,90 +135,51 @@ Item {
         repeat: false
         running: false
         onTriggered: {
-            console.log("PIP C12: Starting delayed connection to: " + root.streamName)
-            mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
-            mediaPlayer.play()
-        }
-    }
-
-    // Video player for this stream
-    MediaPlayer {
-        id: mediaPlayer
-        videoOutput: videoOutput
-        autoPlay: true
-
-        Component.onCompleted: {
-            // For C12 cameras, delay PIP connection to let main stream establish first
-            var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
-            if (isC12 && root.streamUrl.length > 0) {
-                console.log("PIP C12: Delaying connection for " + root.streamName)
-                delayedStartTimer.start()
-            } else {
-                source = root.makeLowLatencyUrl(root.streamUrl)
-                if (source.toString().length > 0) {
-                    play()
-                }
+            if (videoReceiver && root.streamUrl.length > 0) {
+                console.log("PIP C12: Starting delayed connection to: " + root.streamName)
+                videoReceiver.setUri(root.streamUrl)
+                videoReceiver.setCameraType(root.cameraType)
+                videoReceiver.setLowLatency(true)
+                var timeout = 10000  // C12 gets longer timeout
+                videoReceiver.start(timeout)
             }
-        }
-
-        onSourceChanged: {
-            if (source.toString().length > 0) {
-                var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
-                if (!isC12) {  // Only auto-play for non-C12 (C12 handled by timer)
-                    play()
-                }
-            }
-        }
-
-        onPlaybackStateChanged: {
-            if (playbackState === MediaPlayer.PlayingState) {
-                retryTimer.stop()
-            }
-        }
-
-        onMediaStatusChanged: {
-            // Detect stalled or dead streams and force reconnection
-            if (mediaStatus === MediaPlayer.StalledMedia ||
-                mediaStatus === MediaPlayer.EndOfMedia ||
-                mediaStatus === MediaPlayer.InvalidMedia) {
-                console.log("PIP stream stalled/ended, forcing reconnection: " + root.streamName)
-                stop()
-                source = ""
-                // Retry timer will pick it up
-            }
-        }
-
-        onErrorOccurred: (error, errorString) => {
-            console.warn("StreamPipItem: Stream error for " + root.streamName + ": " + errorString + " - will retry")
-        }
-    }
-
-    // Stream health check timer - detects frozen streams that still report as playing
-    Timer {
-        id: streamHealthTimer
-        interval: 10000  // Check every 10 seconds
-        repeat: true
-        running: root.streamUrl.length > 0 && mediaPlayer.playbackState === MediaPlayer.PlayingState && _isExpanded
-
-        property int lastPosition: 0
-
-        onTriggered: {
-            // If position hasn't changed and we think we're playing, stream is frozen
-            if (mediaPlayer.position === lastPosition && mediaPlayer.position > 0) {
-                console.log("PIP stream frozen detected, forcing reconnection: " + root.streamName)
-                mediaPlayer.stop()
-                mediaPlayer.source = ""
-                mediaPlayer.source = root.makeLowLatencyUrl(root.streamUrl)
-                mediaPlayer.play()
-            }
-            lastPosition = mediaPlayer.position
         }
     }
 
     // Helper property to check if we actually have video playing
-    property bool _isActuallyPlaying: mediaPlayer.playbackState === MediaPlayer.PlayingState &&
-                                      (mediaPlayer.mediaStatus === MediaPlayer.BufferedMedia ||
-                                       mediaPlayer.mediaStatus === MediaPlayer.BufferingMedia)
+    property bool _isActuallyPlaying: videoReceiver ? videoReceiver.decoding : false
+
+    // Connect to VideoReceiver signals
+    Connections {
+        target: videoReceiver
+
+        function onStreamingChanged(active) {
+            console.log("PIP " + root.streamName + " streaming changed: " + (active ? "yes" : "no"))
+            if (active) {
+                retryTimer.stop()
+            }
+        }
+
+        function onDecodingChanged(active) {
+            console.log("PIP " + root.streamName + " decoding changed: " + (active ? "yes" : "no"))
+        }
+
+        function onVideoSizeChanged(size) {
+            console.log("PIP " + root.streamName + " resized: " + size.width + "x" + size.height)
+        }
+
+        function onOnStartComplete(status) {
+            console.log("PIP " + root.streamName + " start complete, status: " + status)
+            if (status === 0 && videoReceiver && videoReceiver.sink()) {  // STATUS_OK = 0
+                videoReceiver.startDecoding(videoReceiver.sink())
+            }
+        }
+
+        function onOnStopComplete(status) {
+            console.log("PIP " + root.streamName + " stop complete, status: " + status)
+            // Retry timer will handle reconnection if needed
+        }
+    }
 
     // Main PIP container - visible when expanded
     Item {
@@ -212,10 +188,11 @@ Item {
         visible: _isExpanded
         clip: true
 
-        VideoOutput {
-            id: videoOutput
+        // GStreamer video item
+        GstGLQt6VideoItem {
+            id: videoItem
             anchors.fill: parent
-            fillMode: VideoOutput.PreserveAspectCrop
+            // objectName set dynamically when videoReceiver assigned
             visible: root._isActuallyPlaying
         }
 

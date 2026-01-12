@@ -119,6 +119,18 @@ void VideoManager::cleanup()
     for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
         QGCCorePlugin::instance()->releaseVideoSink(receiver->sink());
     }
+
+    // Clean up PIP receivers
+    while (!_pipReceivers.isEmpty()) {
+        VideoReceiver *receiver = _pipReceivers.takeFirst();
+        if (receiver) {
+            _stopReceiver(receiver);
+            if (receiver->sink()) {
+                QGCCorePlugin::instance()->releaseVideoSink(receiver->sink());
+            }
+            receiver->deleteLater();
+        }
+    }
 }
 
 void VideoManager::_cleanupOldVideos()
@@ -846,6 +858,93 @@ void VideoManager::clearOverrideUri()
         // Trigger full video source change to restore default settings
         _videoSourceChanged();
     }
+}
+
+VideoReceiver* VideoManager::createPipReceiver(const QString &name)
+{
+    qCDebug(VideoManagerLog) << "Creating PIP receiver:" << name;
+
+    // Create new VideoReceiver for PIP stream
+    VideoReceiver *receiver = QGCCorePlugin::instance()->createVideoReceiver(this);
+    if (!receiver) {
+        qCCritical(VideoManagerLog) << "Failed to create PIP receiver:" << name;
+        return nullptr;
+    }
+
+    receiver->setName(name);
+
+    // Find QML item by name (must exist before calling this)
+    QQuickItem *widget = qgcApp()->mainRootWindow()->findChild<QQuickItem*>(name);
+    if (!widget) {
+        qCWarning(VideoManagerLog) << "PIP stream widget not found:" << name;
+        // Widget may not be loaded yet - can be set later
+    } else {
+        receiver->setWidget(widget);
+
+        // Create video sink for this PIP stream
+        void *sink = QGCCorePlugin::instance()->createVideoSink(widget, receiver);
+        if (!sink) {
+            qCWarning(VideoManagerLog) << "Failed to create video sink for PIP:" << name;
+        } else {
+            receiver->setSink(sink);
+        }
+    }
+
+    // Connect signals for PIP receiver (no main stream updates)
+    (void) connect(receiver, &VideoReceiver::streamingChanged, this, [receiver](bool active) {
+        qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "streaming changed:" << (active ? "yes" : "no");
+    });
+
+    (void) connect(receiver, &VideoReceiver::decodingChanged, this, [receiver](bool active) {
+        qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "decoding changed:" << (active ? "yes" : "no");
+    });
+
+    (void) connect(receiver, &VideoReceiver::videoSizeChanged, this, [receiver](QSize size) {
+        qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "resized:" << size.width() << "x" << size.height();
+    });
+
+    // Add to PIP receivers list
+    _pipReceivers.append(receiver);
+    emit pipReceiversChanged();
+
+    return receiver;
+}
+
+void VideoManager::destroyPipReceiver(VideoReceiver *receiver)
+{
+    if (!receiver) {
+        return;
+    }
+
+    qCDebug(VideoManagerLog) << "Destroying PIP receiver:" << receiver->name();
+
+    // Stop receiver
+    _stopReceiver(receiver);
+
+    // Remove from list
+    _pipReceivers.removeAll(receiver);
+    emit pipReceiversChanged();
+
+    // Release video sink
+    if (receiver->sink()) {
+        QGCCorePlugin::instance()->releaseVideoSink(receiver->sink());
+    }
+
+    // Delete receiver
+    receiver->deleteLater();
+}
+
+VideoReceiver* VideoManager::getPipReceiver(int index)
+{
+    if (index >= 0 && index < _pipReceivers.size()) {
+        return _pipReceivers[index];
+    }
+    return nullptr;
+}
+
+int VideoManager::pipReceiverCount() const
+{
+    return _pipReceivers.size();
 }
 
 /*===========================================================================*/

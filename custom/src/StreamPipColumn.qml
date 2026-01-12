@@ -9,7 +9,6 @@
 
 import QtQuick
 import QtQuick.Layouts
-import QtMultimedia
 
 import QGroundControl
 import QGroundControl.Controls
@@ -20,6 +19,7 @@ Item {
     property var pipViewReference: null  // Reference to the stock PipView for sizing
 
     readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
+    readonly property var _videoManager: QGroundControl.videoManager
     readonly property var _activeLink: _linksManager ? _linksManager.activeLink : null
     readonly property var _streamUrls: _linksManager ? _linksManager.activeStreamUrls : []
     readonly property var _streamNames: _linksManager ? _linksManager.activeStreamNames : []
@@ -59,6 +59,42 @@ Item {
                 // Use item's implicitHeight to handle collapse/expand
                 Layout.preferredHeight: item ? item.implicitHeight : root._pipHeight
 
+                property var pipReceiver: null
+
+                onActiveChanged: {
+                    if (active && root._videoManager) {
+                        // Create VideoReceiver for this PIP stream
+                        console.log("Creating PIP receiver for stream " + index)
+                        var receiverName = "pip_" + index
+                        pipReceiver = root._videoManager.createPipReceiver(receiverName)
+
+                        if (pipReceiver) {
+                            // Configure receiver
+                            pipReceiver.setUri(_streamUrls[index])
+                            pipReceiver.setCameraType(_cameraTypes[index])
+                            pipReceiver.setLowLatency(true)
+
+                            // Assign receiver to item when loaded
+                            if (item) {
+                                item.videoReceiver = pipReceiver
+                            }
+                        }
+                    } else if (!active && pipReceiver && root._videoManager) {
+                        // Destroy VideoReceiver when stream is no longer needed
+                        console.log("Destroying PIP receiver for stream " + index)
+                        root._videoManager.destroyPipReceiver(pipReceiver)
+                        pipReceiver = null
+                    }
+                }
+
+                onLoaded: {
+                    // Assign VideoReceiver to item after it's loaded
+                    if (item && pipReceiver) {
+                        console.log("Assigning PIP receiver to stream item " + index)
+                        item.videoReceiver = pipReceiver
+                    }
+                }
+
                 sourceComponent: StreamPipItem {
                     width: root._pipWidth
                     streamUrl: _streamUrls[index] || ""
@@ -66,6 +102,7 @@ Item {
                     cameraType: _cameraTypes[index] || ""
                     streamIndex: index
                     linksManager: _linksManager
+                    // videoReceiver assigned dynamically via onLoaded
                 }
             }
         }
