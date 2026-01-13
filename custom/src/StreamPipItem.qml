@@ -39,7 +39,7 @@ Item {
             console.log("PIP: VideoReceiver assigned for " + streamName)
 
             // Set object name for video sink discovery
-            videoItem.objectName = videoReceiver.name()
+            videoItem.objectName = videoReceiver.name
 
             // Start playback (receiver already configured in C++)
             var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
@@ -136,8 +136,8 @@ Item {
 
         function onOnStartComplete(status) {
             console.log("PIP " + root.streamName + " start complete, status: " + status)
-            if (status === 0 && videoReceiver && videoReceiver.sink()) {  // STATUS_OK = 0
-                videoReceiver.startDecoding(videoReceiver.sink())
+            if (status === 0 && videoReceiver && videoReceiver.sink) {  // STATUS_OK = 0
+                videoReceiver.startDecoding(videoReceiver.sink)
             }
         }
 
