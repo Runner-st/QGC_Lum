@@ -615,8 +615,14 @@ void VideoManager::_communicationLostChanged(bool connectionLost)
 
 void VideoManager::_restartAllVideos()
 {
+    // Restart main video receivers
     for (VideoReceiver *videoReceiver : std::as_const(_videoReceivers)) {
         _restartVideo(videoReceiver);
+    }
+
+    // Also restart PIP video receivers
+    for (VideoReceiver *pipReceiver : std::as_const(_pipReceivers)) {
+        _restartVideo(pipReceiver);
     }
 }
 

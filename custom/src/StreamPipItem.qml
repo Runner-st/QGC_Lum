@@ -33,6 +33,35 @@ Item {
         _isExpanded = expanded
     }
 
+    // Force restart the stream (called by StreamPipColumn on reconnection)
+    function forceRestart() {
+        if (videoReceiver) {
+            console.log("PIP " + streamName + " forcing restart")
+            videoReceiver.stop()
+            // Use delayed start for proper sequencing
+            forceRestartTimer.start()
+        }
+    }
+
+    // Timer for forced restart after stop
+    Timer {
+        id: forceRestartTimer
+        interval: 500  // Wait for stop to complete
+        repeat: false
+        onTriggered: {
+            if (videoReceiver && root.streamUrl.length > 0) {
+                console.log("PIP " + root.streamName + " restarting after force stop")
+                var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+                if (isC12) {
+                    delayedStartTimer.start()
+                } else {
+                    var timeout = 5000
+                    videoReceiver.start(timeout)
+                }
+            }
+        }
+    }
+
     // Monitor videoReceiver assignment
     onVideoReceiverChanged: {
         if (videoReceiver) {
@@ -53,16 +82,19 @@ Item {
         }
     }
 
-    // Retry timer for failed connections
+    // Retry timer for failed connections or stuck streams
+    // Triggers when we have a stream URL but no actual video decoding
     Timer {
         id: retryTimer
         interval: 3000  // Retry every 3 seconds
         repeat: true
-        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.streaming && _isExpanded && !delayedStartTimer.running
+        // Run when: have URL, have receiver, NOT decoding (stuck or failed), expanded, not in other timers
+        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.decoding && _isExpanded &&
+                 !delayedStartTimer.running && !forceRestartTimer.running
 
         onTriggered: {
             if (root.streamUrl.length > 0 && videoReceiver) {
-                console.log("Retrying PIP stream: " + root.streamName)
+                console.log("Retrying PIP stream: " + root.streamName + " (streaming=" + videoReceiver.streaming + ", decoding=" + videoReceiver.decoding + ")")
                 videoReceiver.stop()
 
                 var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
@@ -78,19 +110,20 @@ Item {
         }
     }
 
-    // Connection timeout - force retry if stuck
+    // Connection timeout - force retry if stuck in streaming-but-not-decoding state
     Timer {
         id: connectionTimeoutTimer
         // C12 cameras may need more time for RTSP session negotiation
         interval: {
             var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
-            return isC12 ? 10000 : 5000  // 10 seconds for C12, 5 seconds for others
+            return isC12 ? 12000 : 8000  // 12 seconds for C12, 8 seconds for others
         }
         repeat: false
-        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.streaming && !videoReceiver.decoding && _isExpanded
+        // Run when streaming started but decoding hasn't begun
+        running: root.streamUrl.length > 0 && videoReceiver && videoReceiver.streaming && !videoReceiver.decoding && _isExpanded
 
         onTriggered: {
-            console.log("Connection timeout for PIP stream: " + root.streamName + " - forcing retry")
+            console.log("Connection timeout for PIP stream: " + root.streamName + " - streaming but not decoding, forcing retry")
             if (videoReceiver) {
                 videoReceiver.stop()
             }

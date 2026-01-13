@@ -42,11 +42,41 @@ Item {
     width: _pipWidth
     height: pipColumn.height
 
+    // Listen for link reconnection to restart PIP streams
+    Connections {
+        target: _linksManager
+
+        function onActiveLinkChanged() {
+            if (_activeLink && _streamUrls.length > 0) {
+                console.log("StreamPipColumn: Active link changed, will restart PIP streams")
+                // Small delay to let main stream start first
+                pipRestartTimer.start()
+            }
+        }
+    }
+
+    // Timer to restart PIP streams with delay after link change
+    Timer {
+        id: pipRestartTimer
+        interval: 500  // 500ms delay to let main stream establish first
+        repeat: false
+        onTriggered: {
+            console.log("StreamPipColumn: Restarting all PIP streams")
+            for (var i = 0; i < pipColumn.children.length; i++) {
+                var loader = pipRepeater.itemAt(i)
+                if (loader && loader.item && loader.item.forceRestart) {
+                    loader.item.forceRestart()
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         id: pipColumn
         spacing: ScreenTools.defaultFontPixelWidth / 2
 
         Repeater {
+            id: pipRepeater
             model: _streamUrls.length
 
             // Only create items for non-main streams
