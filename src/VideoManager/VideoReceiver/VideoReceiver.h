@@ -22,6 +22,11 @@ class VideoReceiver : public QObject
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("")
+    Q_PROPERTY(QString name READ name NOTIFY nameChanged)
+    Q_PROPERTY(QString uri READ uri NOTIFY uriChanged)
+    Q_PROPERTY(bool streaming READ streaming NOTIFY streamingChanged)
+    Q_PROPERTY(bool decoding READ decoding NOTIFY decodingChanged)
+    Q_PROPERTY(void* sink READ sink NOTIFY sinkChanged)
 public:
     explicit VideoReceiver(QObject *parent = nullptr)
         : QObject(parent)
@@ -36,6 +41,8 @@ public:
     QString cameraType() const { return _cameraType; }
     bool started() const { return _started; }
     bool lowLatency() const { return _lowLatency; }
+    bool streaming() const { return _streaming; }
+    bool decoding() const { return _decoding; }
     QGCVideoStreamInfo *videoStreamInfo() { return _videoStreamInfo; }
     QString recordingOutput() const { return _recordingOutput; }
 

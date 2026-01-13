@@ -891,35 +891,10 @@ VideoReceiver* VideoManager::createPipReceiver(const QString &name, const QStrin
         qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "resized:" << size.width() << "x" << size.height();
     });
 
-    (void) connect(receiver, &VideoReceiver::onStartComplete, this, [this, receiver](VideoReceiver::STATUS status) {
-        if (!receiver) {
-            return;
-        }
-
+    (void) connect(receiver, &VideoReceiver::onStartComplete, this, [receiver](VideoReceiver::STATUS status) {
+        // Sink setup is handled by QML calling setupPipVideoSink()
+        // This handler is just for logging
         qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "start complete, status:" << status;
-        if (status == VideoReceiver::STATUS_OK) {
-            // Find widget if not already set
-            if (!receiver->widget()) {
-                QQuickItem *widget = qgcApp()->mainRootWindow()->findChild<QQuickItem*>(receiver->name());
-                if (widget) {
-                    receiver->setWidget(widget);
-                }
-            }
-
-            // Create sink if not already created
-            if (receiver->widget() && !receiver->sink()) {
-                void *sink = QGCCorePlugin::instance()->createVideoSink(receiver->widget(), receiver);
-                if (sink) {
-                    receiver->setSink(sink);
-                    qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "video sink created";
-                }
-            }
-
-            // Start decoding if we have a sink
-            if (receiver->sink()) {
-                receiver->startDecoding(receiver->sink());
-            }
-        }
     });
 
     // Add to PIP receivers list
@@ -964,6 +939,36 @@ VideoReceiver* VideoManager::getPipReceiver(int index)
 int VideoManager::pipReceiverCount() const
 {
     return _pipReceivers.size();
+}
+
+void VideoManager::setupPipVideoSink(VideoReceiver *receiver, QQuickItem *videoItem)
+{
+    if (!receiver || !videoItem) {
+        qWarning() << "setupPipVideoSink: invalid parameters - receiver:" << receiver << "videoItem:" << videoItem;
+        return;
+    }
+
+    qWarning() << "setupPipVideoSink: Setting up sink for" << receiver->name();
+
+    // Set the widget
+    receiver->setWidget(videoItem);
+
+    // Create the video sink
+    if (!receiver->sink()) {
+        void *sink = QGCCorePlugin::instance()->createVideoSink(videoItem, receiver);
+        if (sink) {
+            receiver->setSink(sink);
+            qWarning() << "setupPipVideoSink:" << receiver->name() << "sink created successfully";
+        } else {
+            qWarning() << "setupPipVideoSink:" << receiver->name() << "sink creation FAILED";
+        }
+    }
+
+    // Start decoding if we have a sink and the receiver is streaming
+    if (receiver->sink()) {
+        qWarning() << "setupPipVideoSink:" << receiver->name() << "starting decoding";
+        receiver->startDecoding(receiver->sink());
+    }
 }
 
 /*===========================================================================*/

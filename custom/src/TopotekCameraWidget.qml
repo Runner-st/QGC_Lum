@@ -101,7 +101,6 @@ Rectangle {
                 buttonHeight: _buttonSize
                 iconText: "▲"
                 buttonEnabled: isConnected
-                palette: qgcPal
                 onStartCommand: if (topotekController) topotekController.tiltUp()
                 onStopCommand: if (topotekController) topotekController.stopPanTilt()
             }
@@ -114,7 +113,6 @@ Rectangle {
                 buttonHeight: _buttonSize
                 iconText: "◀"
                 buttonEnabled: isConnected
-                palette: qgcPal
                 onStartCommand: if (topotekController) topotekController.panLeft()
                 onStopCommand: if (topotekController) topotekController.stopPanTilt()
             }
@@ -135,7 +133,6 @@ Rectangle {
                 buttonHeight: _buttonSize
                 iconText: "▶"
                 buttonEnabled: isConnected
-                palette: qgcPal
                 onStartCommand: if (topotekController) topotekController.panRight()
                 onStopCommand: if (topotekController) topotekController.stopPanTilt()
             }
@@ -148,7 +145,6 @@ Rectangle {
                 buttonHeight: _buttonSize
                 iconText: "▼"
                 buttonEnabled: isConnected
-                palette: qgcPal
                 onStartCommand: if (topotekController) topotekController.tiltDown()
                 onStopCommand: if (topotekController) topotekController.stopPanTilt()
             }
@@ -186,8 +182,7 @@ Rectangle {
                         buttonHeight: _buttonSize * 0.7
                         iconText: "+"
                         buttonEnabled: isConnected
-                        palette: qgcPal
-                        onStartCommand: if (topotekController) topotekController.dayZoomIn()
+                                onStartCommand: if (topotekController) topotekController.dayZoomIn()
                         onStopCommand: if (topotekController) topotekController.stopDayZoom()
                     }
 
@@ -196,8 +191,7 @@ Rectangle {
                         buttonHeight: _buttonSize * 0.7
                         iconText: "-"
                         buttonEnabled: isConnected
-                        palette: qgcPal
-                        onStartCommand: if (topotekController) topotekController.dayZoomOut()
+                                onStartCommand: if (topotekController) topotekController.dayZoomOut()
                         onStopCommand: if (topotekController) topotekController.stopDayZoom()
                     }
                 }
@@ -234,8 +228,7 @@ Rectangle {
                         buttonHeight: _buttonSize * 0.7
                         iconText: "+"
                         buttonEnabled: isConnected
-                        palette: qgcPal
-                        onStartCommand: if (topotekController) topotekController.thermalZoomIn()
+                                onStartCommand: if (topotekController) topotekController.thermalZoomIn()
                         onStopCommand: if (topotekController) topotekController.stopThermalZoom()
                     }
 
@@ -244,8 +237,7 @@ Rectangle {
                         buttonHeight: _buttonSize * 0.7
                         iconText: "-"
                         buttonEnabled: isConnected
-                        palette: qgcPal
-                        onStartCommand: if (topotekController) topotekController.thermalZoomOut()
+                                onStartCommand: if (topotekController) topotekController.thermalZoomOut()
                         onStopCommand: if (topotekController) topotekController.stopThermalZoom()
                     }
                 }
@@ -374,15 +366,17 @@ Rectangle {
         property real buttonHeight: _buttonSize
         property string iconText: ""
         property bool buttonEnabled: false
-        property var palette: null  // Pass qgcPal from parent
 
         signal startCommand()
         signal stopCommand()
 
+        // Local palette for this component - colorGroupEnabled bound to buttonEnabled
+        QGCPalette { id: btnPal; colorGroupEnabled: buttonEnabled }
+
         width: buttonWidth
         height: buttonHeight
         radius: ScreenTools.defaultFontPixelWidth * 0.25
-        color: buttonEnabled ? (mouseArea.pressed ? palette.buttonHighlight : palette.button) : palette.windowShade
+        color: mouseArea.pressed ? btnPal.buttonHighlight : btnPal.button
 
         property bool isHolding: false
         property real pressStartTime: 0
@@ -392,7 +386,7 @@ Rectangle {
             anchors.centerIn: parent
             text: iconText
             font.pointSize: ScreenTools.largeFontPointSize
-            color: buttonEnabled ? palette.buttonText : palette.textInactive
+            color: btnPal.buttonText
         }
 
         Timer {

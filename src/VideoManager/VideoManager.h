@@ -77,6 +77,7 @@ public:
     Q_INVOKABLE void destroyPipReceiver(VideoReceiver *receiver);
     Q_INVOKABLE VideoReceiver* getPipReceiver(int index);
     Q_INVOKABLE int pipReceiverCount() const;
+    Q_INVOKABLE void setupPipVideoSink(VideoReceiver *receiver, QQuickItem *videoItem);
 
     void init(QQuickWindow *rootWindow);
     void cleanup();

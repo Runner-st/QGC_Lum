@@ -136,8 +136,14 @@ Item {
 
         function onOnStartComplete(status) {
             console.log("PIP " + root.streamName + " start complete, status: " + status)
-            if (status === 0 && videoReceiver && videoReceiver.sink) {  // STATUS_OK = 0
-                videoReceiver.startDecoding(videoReceiver.sink)
+            if (status === 0 && videoReceiver) {  // STATUS_OK = 0
+                // Setup video sink from QML side (C++ can't find dynamically created QML items)
+                if (!videoReceiver.sink) {
+                    console.log("PIP " + root.streamName + " setting up video sink from QML")
+                    QGroundControl.videoManager.setupPipVideoSink(videoReceiver, videoItem)
+                } else if (videoReceiver.sink) {
+                    videoReceiver.startDecoding(videoReceiver.sink)
+                }
             }
         }
 
