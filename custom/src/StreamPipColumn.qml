@@ -66,14 +66,12 @@ Item {
                         // Create VideoReceiver for this PIP stream
                         console.log("Creating PIP receiver for stream " + index)
                         var receiverName = "pip_" + index
-                        pipReceiver = root._videoManager.createPipReceiver(receiverName)
+                        var streamUrl = _streamUrls[index] || ""
+                        var camType = _cameraTypes[index] || ""
+
+                        pipReceiver = root._videoManager.createPipReceiver(receiverName, streamUrl, camType)
 
                         if (pipReceiver) {
-                            // Configure receiver
-                            pipReceiver.setUri(_streamUrls[index])
-                            pipReceiver.setCameraType(_cameraTypes[index])
-                            pipReceiver.setLowLatency(true)
-
                             // Assign receiver to item when loaded
                             if (item) {
                                 item.videoReceiver = pipReceiver

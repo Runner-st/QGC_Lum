@@ -30,6 +30,7 @@ class VideoManager : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("")
     Q_MOC_INCLUDE("Vehicle.h")
+    Q_MOC_INCLUDE("VideoReceiver.h")
     Q_PROPERTY(bool     gstreamerEnabled        READ gstreamerEnabled                           CONSTANT)
     Q_PROPERTY(bool     qtmultimediaEnabled     READ qtmultimediaEnabled                        CONSTANT)
     Q_PROPERTY(bool     uvcEnabled              READ uvcEnabled                                 CONSTANT)
@@ -72,7 +73,7 @@ public:
     QString overrideUri() const { return _overrideUri; }
 
     // PIP receiver management for secondary video streams
-    Q_INVOKABLE VideoReceiver* createPipReceiver(const QString &name);
+    Q_INVOKABLE VideoReceiver* createPipReceiver(const QString &name, const QString &uri, const QString &cameraType);
     Q_INVOKABLE void destroyPipReceiver(VideoReceiver *receiver);
     Q_INVOKABLE VideoReceiver* getPipReceiver(int index);
     Q_INVOKABLE int pipReceiverCount() const;

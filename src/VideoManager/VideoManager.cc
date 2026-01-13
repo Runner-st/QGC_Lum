@@ -860,9 +860,9 @@ void VideoManager::clearOverrideUri()
     }
 }
 
-VideoReceiver* VideoManager::createPipReceiver(const QString &name)
+VideoReceiver* VideoManager::createPipReceiver(const QString &name, const QString &uri, const QString &cameraType)
 {
-    qCDebug(VideoManagerLog) << "Creating PIP receiver:" << name;
+    qCDebug(VideoManagerLog) << "Creating PIP receiver:" << name << "URI:" << uri << "Camera type:" << cameraType;
 
     // Create new VideoReceiver for PIP stream
     VideoReceiver *receiver = QGCCorePlugin::instance()->createVideoReceiver(this);
@@ -872,23 +872,11 @@ VideoReceiver* VideoManager::createPipReceiver(const QString &name)
     }
 
     receiver->setName(name);
+    receiver->setUri(uri);
+    receiver->setCameraType(cameraType);
+    receiver->setLowLatency(true);
 
-    // Find QML item by name (must exist before calling this)
-    QQuickItem *widget = qgcApp()->mainRootWindow()->findChild<QQuickItem*>(name);
-    if (!widget) {
-        qCWarning(VideoManagerLog) << "PIP stream widget not found:" << name;
-        // Widget may not be loaded yet - can be set later
-    } else {
-        receiver->setWidget(widget);
-
-        // Create video sink for this PIP stream
-        void *sink = QGCCorePlugin::instance()->createVideoSink(widget, receiver);
-        if (!sink) {
-            qCWarning(VideoManagerLog) << "Failed to create video sink for PIP:" << name;
-        } else {
-            receiver->setSink(sink);
-        }
-    }
+    // Note: Widget and sink will be set later when QML item is loaded
 
     // Connect signals for PIP receiver (no main stream updates)
     (void) connect(receiver, &VideoReceiver::streamingChanged, this, [receiver](bool active) {
@@ -901,6 +889,37 @@ VideoReceiver* VideoManager::createPipReceiver(const QString &name)
 
     (void) connect(receiver, &VideoReceiver::videoSizeChanged, this, [receiver](QSize size) {
         qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "resized:" << size.width() << "x" << size.height();
+    });
+
+    (void) connect(receiver, &VideoReceiver::onStartComplete, this, [this, receiver](VideoReceiver::STATUS status) {
+        if (!receiver) {
+            return;
+        }
+
+        qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "start complete, status:" << status;
+        if (status == VideoReceiver::STATUS_OK) {
+            // Find widget if not already set
+            if (!receiver->widget()) {
+                QQuickItem *widget = qgcApp()->mainRootWindow()->findChild<QQuickItem*>(receiver->name());
+                if (widget) {
+                    receiver->setWidget(widget);
+                }
+            }
+
+            // Create sink if not already created
+            if (receiver->widget() && !receiver->sink()) {
+                void *sink = QGCCorePlugin::instance()->createVideoSink(receiver->widget(), receiver);
+                if (sink) {
+                    receiver->setSink(sink);
+                    qCDebug(VideoManagerLog) << "PIP" << receiver->name() << "video sink created";
+                }
+            }
+
+            // Start decoding if we have a sink
+            if (receiver->sink()) {
+                receiver->startDecoding(receiver->sink());
+            }
+        }
     });
 
     // Add to PIP receivers list

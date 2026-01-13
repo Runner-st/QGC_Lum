@@ -64,10 +64,10 @@ Rectangle {
         id: stopDelayTimer
         interval: 200
         repeat: false
-        property var stopFunction: null
+        property var targetButton: null
         onTriggered: {
-            if (stopFunction) {
-                stopFunction()
+            if (targetButton) {
+                targetButton.stopCommand()
             }
         }
     }
@@ -383,7 +383,7 @@ Rectangle {
             anchors.centerIn: parent
             text: iconText
             font.pointSize: ScreenTools.largeFontPointSize
-            color: buttonEnabled ? qgcPal.buttonText : qgcPal.textInactive
+            color: buttonEnabled ? root.qgcPal.buttonText : root.qgcPal.textInactive
         }
 
         Timer {
@@ -434,7 +434,7 @@ Rectangle {
                     } else {
                         stopDelayTimer.interval = 0
                     }
-                    stopDelayTimer.stopFunction = btn.stopCommand
+                    stopDelayTimer.targetButton = btn
                     stopDelayTimer.start()
                 }
 

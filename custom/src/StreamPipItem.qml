@@ -33,26 +33,6 @@ Item {
         _isExpanded = expanded
     }
 
-    // Watch for stream URL changes and reconnect appropriately
-    onStreamUrlChanged: {
-        if (streamUrl.length > 0 && videoReceiver) {
-            console.log("PIP: Stream URL changed for " + streamName + " - stopping receiver")
-            videoReceiver.stop()
-
-            var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
-            if (isC12) {
-                console.log("PIP C12: Delaying reconnection to: " + streamName)
-                delayedStartTimer.start()
-            } else {
-                // Update URI and start immediately
-                videoReceiver.setUri(streamUrl)
-                videoReceiver.setLowLatency(true)
-                var timeout = 5000
-                videoReceiver.start(timeout)
-            }
-        }
-    }
-
     // Monitor videoReceiver assignment
     onVideoReceiverChanged: {
         if (videoReceiver) {
@@ -61,12 +41,7 @@ Item {
             // Set object name for video sink discovery
             videoItem.objectName = videoReceiver.name()
 
-            // Configure receiver
-            videoReceiver.setUri(streamUrl)
-            videoReceiver.setCameraType(cameraType)
-            videoReceiver.setLowLatency(true)
-
-            // Start playback (with C12 delay if needed)
+            // Start playback (receiver already configured in C++)
             var isC12 = cameraType.toLowerCase().indexOf("skydroidc12") >= 0
             if (isC12 && streamUrl.length > 0) {
                 console.log("PIP C12: Delaying connection for " + streamName)
@@ -74,10 +49,6 @@ Item {
             } else if (streamUrl.length > 0) {
                 var timeout = 5000
                 videoReceiver.start(timeout)
-                // Start decoding when receiver is ready
-                if (videoReceiver.sink()) {
-                    videoReceiver.startDecoding(videoReceiver.sink())
-                }
             }
         }
     }
@@ -100,8 +71,6 @@ Item {
                     delayedStartTimer.interval = 2000
                     delayedStartTimer.start()
                 } else {
-                    videoReceiver.setUri(root.streamUrl)
-                    videoReceiver.setLowLatency(true)
                     var timeout = 5000
                     videoReceiver.start(timeout)
                 }
@@ -137,9 +106,6 @@ Item {
         onTriggered: {
             if (videoReceiver && root.streamUrl.length > 0) {
                 console.log("PIP C12: Starting delayed connection to: " + root.streamName)
-                videoReceiver.setUri(root.streamUrl)
-                videoReceiver.setCameraType(root.cameraType)
-                videoReceiver.setLowLatency(true)
                 var timeout = 10000  // C12 gets longer timeout
                 videoReceiver.start(timeout)
             }
