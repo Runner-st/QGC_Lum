@@ -32,6 +32,9 @@ Item {
         return _streamUrls.length - 1
     }
 
+    // Track previous stream count to detect when streams become available
+    property int _prevStreamCount: 0
+
     // Match the stock PIP sizing
     readonly property real _pipWidth: pipViewReference ? pipViewReference.width : parent.width * 0.2
     readonly property real _pipHeight: _pipWidth * (9/16)
@@ -42,16 +45,38 @@ Item {
     width: _pipWidth
     height: pipColumn.height
 
-    // Listen for link reconnection to restart PIP streams
+    // Listen for link reconnection and stream changes
     Connections {
         target: _linksManager
 
         function onActiveLinkChanged() {
+            console.log("StreamPipColumn: Active link changed, _activeLink=" + (_activeLink ? "yes" : "no") +
+                       ", _streamUrls.length=" + _streamUrls.length)
             if (_activeLink && _streamUrls.length > 0) {
-                console.log("StreamPipColumn: Active link changed, will restart PIP streams")
+                console.log("StreamPipColumn: Will restart PIP streams after delay")
                 // Small delay to let main stream start first
                 pipRestartTimer.start()
             }
+        }
+
+        function onActiveStreamsChanged() {
+            var newSecondaryCount = (_streamUrls.length > 1) ? (_streamUrls.length - 1) : 0
+            console.log("StreamPipColumn: Active streams changed, count=" + _streamUrls.length +
+                       ", secondary=" + newSecondaryCount + ", prev=" + _prevStreamCount)
+            for (var i = 0; i < _streamUrls.length; i++) {
+                console.log("  Stream " + i + ": " + (_streamUrls[i] || "(empty)"))
+            }
+            // If secondary streams just became available, trigger PIP start
+            if (newSecondaryCount > 0 && _prevStreamCount === 0) {
+                console.log("StreamPipColumn: Streams now available, scheduling PIP start")
+                pipStartTimer.start()
+            }
+            // Also restart if we already have streams but they might need refresh
+            else if (newSecondaryCount > 0 && !pipStartTimer.running && !pipRestartTimer.running) {
+                console.log("StreamPipColumn: Secondary streams available, scheduling PIP start")
+                pipStartTimer.start()
+            }
+            _prevStreamCount = newSecondaryCount
         }
     }
 
@@ -61,14 +86,42 @@ Item {
         interval: 500  // 500ms delay to let main stream establish first
         repeat: false
         onTriggered: {
-            console.log("StreamPipColumn: Restarting all PIP streams")
-            for (var i = 0; i < pipColumn.children.length; i++) {
-                var loader = pipRepeater.itemAt(i)
-                if (loader && loader.item && loader.item.forceRestart) {
-                    loader.item.forceRestart()
-                }
+            console.log("StreamPipColumn: Restarting all PIP streams (link changed)")
+            _restartAllPips()
+        }
+    }
+
+    // Timer to start PIPs when streams first become available
+    Timer {
+        id: pipStartTimer
+        interval: 1000  // 1 second delay to let everything initialize
+        repeat: false
+        onTriggered: {
+            console.log("StreamPipColumn: Starting PIPs (streams became available)")
+            _restartAllPips()
+        }
+    }
+
+    // Helper function to restart all PIP streams
+    function _restartAllPips() {
+        console.log("StreamPipColumn: _restartAllPips called, repeater count=" + pipRepeater.count)
+        for (var i = 0; i < pipRepeater.count; i++) {
+            var loader = pipRepeater.itemAt(i)
+            console.log("  Loader " + i + ": " + (loader ? "exists" : "null") +
+                       ", active=" + (loader ? loader.active : "n/a") +
+                       ", item=" + (loader && loader.item ? "exists" : "null"))
+            if (loader && loader.item && loader.item.forceRestart) {
+                console.log("  Calling forceRestart on loader " + i)
+                loader.item.forceRestart()
             }
         }
+    }
+
+    Component.onCompleted: {
+        console.log("StreamPipColumn: Initialized, _activeLink=" + (_activeLink ? "yes" : "no") +
+                   ", _streamUrls.length=" + _streamUrls.length +
+                   ", _mainStreamIndex=" + _mainStreamIndex +
+                   ", _secondaryStreamCount=" + _secondaryStreamCount)
     }
 
     ColumnLayout {
@@ -92,22 +145,7 @@ Item {
                 property var pipReceiver: null
 
                 onActiveChanged: {
-                    if (active && root._videoManager) {
-                        // Create VideoReceiver for this PIP stream
-                        console.log("Creating PIP receiver for stream " + index)
-                        var receiverName = "pip_" + index
-                        var streamUrl = _streamUrls[index] || ""
-                        var camType = _cameraTypes[index] || ""
-
-                        pipReceiver = root._videoManager.createPipReceiver(receiverName, streamUrl, camType)
-
-                        if (pipReceiver) {
-                            // Assign receiver to item when loaded
-                            if (item) {
-                                item.videoReceiver = pipReceiver
-                            }
-                        }
-                    } else if (!active && pipReceiver && root._videoManager) {
+                    if (!active && pipReceiver && root._videoManager) {
                         // Destroy VideoReceiver when stream is no longer needed
                         console.log("Destroying PIP receiver for stream " + index)
                         root._videoManager.destroyPipReceiver(pipReceiver)
@@ -116,10 +154,19 @@ Item {
                 }
 
                 onLoaded: {
-                    // Assign VideoReceiver to item after it's loaded
-                    if (item && pipReceiver) {
-                        console.log("Assigning PIP receiver to stream item " + index)
-                        item.videoReceiver = pipReceiver
+                    // Create VideoReceiver when item loads (onActiveChanged doesn't fire reliably on initial creation)
+                    if (active && root._videoManager && !pipReceiver) {
+                        console.log("Creating PIP receiver for stream " + index + " (onLoaded)")
+                        var receiverName = "pip_" + index
+                        var streamUrl = _streamUrls[index] || ""
+                        var camType = _cameraTypes[index] || ""
+
+                        pipReceiver = root._videoManager.createPipReceiver(receiverName, streamUrl, camType)
+
+                        if (pipReceiver && item) {
+                            console.log("Assigning PIP receiver to stream item " + index)
+                            item.videoReceiver = pipReceiver
+                        }
                     }
                 }
 

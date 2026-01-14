@@ -40,6 +40,8 @@ Item {
             videoReceiver.stop()
             // Use delayed start for proper sequencing
             forceRestartTimer.start()
+        } else {
+            console.log("PIP " + streamName + " forceRestart called but no videoReceiver yet")
         }
     }
 
