@@ -116,35 +116,29 @@ SettingsPage {
     }
 
     SettingsGroupLayout {
-        Layout.fillWidth: true
+        Layout.minimumWidth: implicitWidth
         heading: qsTr("Managed Links")
         headingDescription: qsTr("Configure flight controller connections with associated camera streams.")
         contentSpacing: ScreenTools.defaultFontPixelHeight
 
         ColumnLayout {
-            Layout.fillWidth: true
+            Layout.minimumWidth: implicitWidth
             spacing: ScreenTools.defaultFontPixelHeight / 2
 
             QGCLabel {
-                Layout.fillWidth: true
                 visible: !_pluginReady
-                wrapMode: Text.WordWrap
                 text: qsTr("Links Manager is unavailable.")
             }
 
             // Status message
             QGCLabel {
                 id: testResultLabel
-                Layout.fillWidth: true
                 visible: false
-                wrapMode: Text.WordWrap
             }
 
             // Links list
             QGCLabel {
-                Layout.fillWidth: true
                 visible: _pluginReady && linkRepeater.count === 0
-                wrapMode: Text.WordWrap
                 text: qsTr("No managed links configured. Click 'Add New Link' to create one.")
             }
 
@@ -153,7 +147,7 @@ SettingsPage {
                 model: _pluginReady ? _linksManager.managedLinks : []
 
                 Rectangle {
-                    Layout.fillWidth: true
+                    Layout.minimumWidth: linkColumn.implicitWidth + ScreenTools.defaultFontPixelHeight
                     height: linkColumn.height + ScreenTools.defaultFontPixelHeight
                     color: _linksManager && _linksManager.activeLink === object ?
                            Qt.rgba(0, 0.5, 0, 0.2) : "transparent"
@@ -163,18 +157,15 @@ SettingsPage {
 
                     ColumnLayout {
                         id: linkColumn
-                        anchors.left: parent.left
-                        anchors.right: parent.right
                         anchors.top: parent.top
+                        anchors.left: parent.left
                         anchors.margins: ScreenTools.defaultFontPixelHeight / 2
                         spacing: ScreenTools.defaultFontPixelHeight / 4
 
                         RowLayout {
-                            Layout.fillWidth: true
                             spacing: ScreenTools.defaultFontPixelWidth
 
                             QGCLabel {
-                                Layout.fillWidth: true
                                 text: object.name
                                 font.bold: true
                                 font.pointSize: ScreenTools.mediumFontPointSize
@@ -189,7 +180,6 @@ SettingsPage {
                         }
 
                         QGCLabel {
-                            Layout.fillWidth: true
                             text: object.serverAddress + ":" + object.serverPort +
                                   (object.autoConnect ? qsTr(" (Auto-connect)") : "")
                             color: qgcPal.textFieldText
@@ -197,7 +187,6 @@ SettingsPage {
 
                         // Camera info
                         QGCLabel {
-                            Layout.fillWidth: true
                             visible: !object.camera1.isEmpty || !object.camera2.isEmpty
                             text: {
                                 var cams = []
@@ -214,7 +203,6 @@ SettingsPage {
                         }
 
                         RowLayout {
-                            Layout.fillWidth: true
                             spacing: ScreenTools.defaultFontPixelWidth
 
                             QGCButton {
@@ -260,11 +248,9 @@ SettingsPage {
 
             // Add new link and import buttons
             RowLayout {
-                Layout.fillWidth: true
                 spacing: ScreenTools.defaultFontPixelWidth
 
                 QGCButton {
-                    Layout.fillWidth: true
                     text: qsTr("Add New Link")
                     onClicked: _openEditDialog(null, true)
                     enabled: _pluginReady
