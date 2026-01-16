@@ -672,7 +672,7 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                 // Topotek KHP290A609: Strict RFC-compliant mode for compatibility
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
-                             "latency", 150,
+                             "latency", 200,
                              "force-non-compliant-url", TRUE,
                              nullptr);
             } else {
