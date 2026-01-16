@@ -669,11 +669,13 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                              "timeout", 5000000,  // 5 seconds in microseconds
                              nullptr);
             } else if (_cameraType == QStringLiteral("TopotekKHP290A609")) {
-                // Topotek KHP290A609: Strict RFC-compliant mode for compatibility
+                // Topotek KHP290A609: Force TCP transport for reliable streaming
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
                              "latency", 200,
                              "force-non-compliant-url", TRUE,
+                             "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - forces TCP interleaved
+                             "timeout", 5000000,  // 5 seconds in microseconds
                              nullptr);
             } else {
                 // GenericIPCamera / HerelinkHDMI: Default GStreamer settings
