@@ -672,7 +672,7 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                 // Topotek KHP290A609: Force TCP transport for reliable streaming
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
-                             "latency", 200,
+                             "latency", 100,
                              "force-non-compliant-url", TRUE,
                              "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - forces TCP interleaved
                              "timeout", 5000000,  // 5 seconds in microseconds
