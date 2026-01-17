@@ -24,10 +24,32 @@ Item {
     anchors.bottom: parent.bottom
     width:          telemIcon.width * 1.1
 
-    property bool showIndicator: _hasTelemetry
+    property bool showIndicator: _hasTelemetry || _showPersistent
 
     property var  _activeVehicle:   QGroundControl.multiVehicleManager.activeVehicle
-    property bool _hasTelemetry:    _activeVehicle.telemetryLRSSI !== 0
+    property bool _hasTelemetry:    _activeVehicle ? _activeVehicle.telemetryLRSSI !== 0 : false
+    property bool _showPersistent:  false
+    property bool _everHadTelemetry: false
+
+    // Persistence timer - keeps indicator visible for 5 seconds after telemetry loss
+    // This prevents flickering when Herelink intermittently sends RADIO_STATUS messages
+    Timer {
+        id: persistenceTimer
+        interval: 5000  // 5 seconds
+        repeat: false
+        onTriggered: _showPersistent = false
+    }
+
+    on_HasTelemetryChanged: {
+        if (_hasTelemetry) {
+            _everHadTelemetry = true
+            _showPersistent = true
+            persistenceTimer.stop()
+        } else if (_everHadTelemetry) {
+            // Start countdown to hide
+            persistenceTimer.restart()
+        }
+    }
 
     QGCColoredImage {
         id:                 telemIcon
