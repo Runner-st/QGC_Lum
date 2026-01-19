@@ -669,12 +669,13 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                              "timeout", 5000000,  // 5 seconds in microseconds
                              nullptr);
             } else if (_cameraType == QStringLiteral("TopotekKHP290A609")) {
-                // Topotek KHP290A609: Force TCP transport for reliable streaming
+                // Topotek KHP290A609: UDP transport with buffering disabled for low latency
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
-                             "latency", 100,
+                             "latency", 200,
                              "force-non-compliant-url", TRUE,
-                             "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - forces TCP interleaved
+                             "protocols", 1,  // GST_RTSP_LOWER_TRANS_UDP - forces UDP unicast
+                             "buffer-mode", 0,  // None - only use RTP timestamps, no jitterbuffer
                              "timeout", 5000000,  // 5 seconds in microseconds
                              nullptr);
             } else {
