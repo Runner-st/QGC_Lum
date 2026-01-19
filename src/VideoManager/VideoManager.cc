@@ -508,7 +508,9 @@ bool VideoManager::_updateSettings(VideoReceiver *receiver)
 
     bool settingsChanged = false;
 
-    const bool lowLatency = _videoSettings->lowLatencyMode()->rawValue().toBool();
+    // Force low latency for Topotek cameras (required for UDP streaming with buffer-mode=0)
+    const bool forceLowLatency = (_overrideCameraType == QStringLiteral("TopotekKHP290A609"));
+    const bool lowLatency = forceLowLatency || _videoSettings->lowLatencyMode()->rawValue().toBool();
     if (lowLatency != receiver->lowLatency()) {
         receiver->setLowLatency(lowLatency);
         settingsChanged = true;
@@ -844,11 +846,22 @@ void VideoManager::setOverrideCameraType(const QString &cameraType)
         qCDebug(VideoManagerLog) << "Setting override camera type:" << cameraType;
         _overrideCameraType = cameraType;
 
-        // Update each receiver's camera type
+        // Force low latency for Topotek cameras
+        const bool forceLowLatency = (cameraType == QStringLiteral("TopotekKHP290A609"));
+
+        // Update each receiver's camera type and low latency setting
         for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
             if (!receiver->isThermal()) {
                 receiver->setCameraType(cameraType);
+                if (forceLowLatency && !receiver->lowLatency()) {
+                    receiver->setLowLatency(true);
+                }
             }
+        }
+
+        // Restart video to apply the new settings
+        if (forceLowLatency) {
+            _restartAllVideos();
         }
     }
 }

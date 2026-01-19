@@ -129,11 +129,13 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
     _updateActiveServoButtons();
 
     // Update VideoManager with the main stream URL and camera type for GStreamer playback
+    // Note: Set camera type BEFORE URI because setOverrideUri triggers video start,
+    // and low latency settings must be applied before the video starts
     if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
-        VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
         if (_activeCameraTypes.count() > _mainStreamIndex) {
             VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
         }
+        VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
     }
 
     // Find and connect the corresponding comm link
@@ -221,11 +223,12 @@ void LinksManagerController::setMainStreamIndex(int index)
         _mainStreamIndex = index;
 
         // Update VideoManager with the new main stream URL and camera type for GStreamer playback
+        // Note: Set camera type BEFORE URI because setOverrideUri triggers video start
         if (VideoManager::instance()) {
-            VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
             if (_activeCameraTypes.count() > _mainStreamIndex) {
                 VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
             }
+            VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
         }
 
         emit mainStreamIndexChanged();
@@ -624,11 +627,12 @@ void LinksManagerController::_checkCommLinkState()
             _updateActiveServoButtons();
 
             // Update VideoManager with the main stream URL and camera type for GStreamer playback
+            // Note: Set camera type BEFORE URI because setOverrideUri triggers video start
             if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
-                VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
                 if (_activeCameraTypes.count() > _mainStreamIndex) {
                     VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
                 }
+                VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
             }
 
             _watchCommLinkForDisconnect(config);
