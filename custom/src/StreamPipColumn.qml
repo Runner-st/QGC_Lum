@@ -35,6 +35,9 @@ Item {
     // Track previous stream count to detect when streams become available
     property int _prevStreamCount: 0
 
+    // Track if main video has started (prevents PIP from starting before main stream)
+    property bool _mainVideoReady: false
+
     // Match the stock PIP sizing
     readonly property real _pipWidth: pipViewReference ? pipViewReference.width : parent.width * 0.2
     readonly property real _pipHeight: _pipWidth * (9/16)
@@ -52,11 +55,8 @@ Item {
         function onActiveLinkChanged() {
             console.log("StreamPipColumn: Active link changed, _activeLink=" + (_activeLink ? "yes" : "no") +
                        ", _streamUrls.length=" + _streamUrls.length)
-            if (_activeLink && _streamUrls.length > 0) {
-                console.log("StreamPipColumn: Will restart PIP streams after delay")
-                // Small delay to let main stream start first
-                pipRestartTimer.start()
-            }
+            // Reset video ready state when link changes - PIPs will wait for videoStartReady
+            _mainVideoReady = false
         }
 
         function onActiveStreamsChanged() {
@@ -66,38 +66,30 @@ Item {
             for (var i = 0; i < _streamUrls.length; i++) {
                 console.log("  Stream " + i + ": " + (_streamUrls[i] || "(empty)"))
             }
-            // If secondary streams just became available, trigger PIP start
-            if (newSecondaryCount > 0 && _prevStreamCount === 0) {
-                console.log("StreamPipColumn: Streams now available, scheduling PIP start")
-                pipStartTimer.start()
-            }
-            // Also restart if we already have streams but they might need refresh
-            else if (newSecondaryCount > 0 && !pipStartTimer.running && !pipRestartTimer.running) {
-                console.log("StreamPipColumn: Secondary streams available, scheduling PIP start")
-                pipStartTimer.start()
-            }
+            // Track stream count changes, but don't auto-start PIPs here
+            // PIPs will be started when videoStartReady is emitted
             _prevStreamCount = newSecondaryCount
         }
-    }
 
-    // Timer to restart PIP streams with delay after link change
-    Timer {
-        id: pipRestartTimer
-        interval: 500  // 500ms delay to let main stream establish first
-        repeat: false
-        onTriggered: {
-            console.log("StreamPipColumn: Restarting all PIP streams (link changed)")
-            _restartAllPips()
+        function onVideoStartReady() {
+            console.log("StreamPipColumn: Main video started (videoStartReady), _secondaryStreamCount=" + _secondaryStreamCount)
+            _mainVideoReady = true
+            // PIPs will now activate via Loader's active binding
+            // Add small delay before triggering restart to let Loaders initialize
+            if (_secondaryStreamCount > 0) {
+                console.log("StreamPipColumn: Scheduling PIP start after main video ready")
+                pipStartTimer.start()
+            }
         }
     }
 
-    // Timer to start PIPs when streams first become available
+    // Timer to start PIPs after main video starts (triggered by videoStartReady signal)
     Timer {
         id: pipStartTimer
-        interval: 1000  // 1 second delay to let everything initialize
+        interval: 500  // 500ms delay after main stream to avoid bandwidth contention
         repeat: false
         onTriggered: {
-            console.log("StreamPipColumn: Starting PIPs (streams became available)")
+            console.log("StreamPipColumn: Starting PIPs after main video ready")
             _restartAllPips()
         }
     }
@@ -122,6 +114,13 @@ Item {
                    ", _streamUrls.length=" + _streamUrls.length +
                    ", _mainStreamIndex=" + _mainStreamIndex +
                    ", _secondaryStreamCount=" + _secondaryStreamCount)
+
+        // Check if video is already ready at startup (not pending)
+        // This handles the case where parameters were already loaded before QML initialized
+        if (_linksManager && _activeLink && !_linksManager.videoStartPending) {
+            console.log("StreamPipColumn: Video already ready at startup (not pending)")
+            _mainVideoReady = true
+        }
     }
 
     ColumnLayout {
@@ -132,10 +131,10 @@ Item {
             id: pipRepeater
             model: _streamUrls.length
 
-            // Only create items for non-main streams
+            // Only create items for non-main streams, and only after main video is ready
             Loader {
                 id: streamLoader
-                active: index !== _mainStreamIndex
+                active: index !== _mainStreamIndex && root._mainVideoReady
                 visible: active
 
                 Layout.preferredWidth: root._pipWidth

@@ -18,6 +18,7 @@
 #include "LinkInterface.h"
 #include "UDPLink.h"
 #include "VideoManager/VideoManager.h"
+#include "MultiVehicleManager.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QJsonDocument>
@@ -30,7 +31,17 @@ LinksManagerController::LinksManagerController(QObject *parent)
     : QObject(parent)
     , _managedLinks(new QmlObjectListModel(this))
     , _linkStateTimer(new QTimer(this))
+    , _videoStartTimeoutTimer(new QTimer(this))
 {
+    // Setup video start timeout timer (single-shot) - must be before _loadConfigurations
+    _videoStartTimeoutTimer->setSingleShot(true);
+    connect(_videoStartTimeoutTimer, &QTimer::timeout, this, &LinksManagerController::_onVideoStartTimeout);
+
+    // Connect to MultiVehicleManager to know when parameters are ready
+    connect(MultiVehicleManager::instance(), &MultiVehicleManager::parameterReadyVehicleAvailableChanged,
+            this, &LinksManagerController::_onParameterReadyVehicleAvailableChanged);
+
+    // Load saved configurations (may start pending video timeout)
     _loadConfigurations();
 
     // Setup timer to check comm link state periodically
@@ -123,19 +134,34 @@ void LinksManagerController::activateLink(ManagedLinkConfiguration *config)
         return;
     }
 
+    // Cancel any pending video from previous link
+    _cancelPendingVideo();
+
     _activeLink = config;
     _mainStreamIndex = 0;
     _updateActiveStreams();
     _updateActiveServoButtons();
 
-    // Update VideoManager with the main stream URL and camera type for GStreamer playback
-    // Note: Set camera type BEFORE URI because setOverrideUri triggers video start,
-    // and low latency settings must be applied before the video starts
+    // Store pending video config instead of starting immediately
+    // This delays video start until FC parameters are loaded to prevent bandwidth contention
     if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
-        if (_activeCameraTypes.count() > _mainStreamIndex) {
-            VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
+        _pendingCameraType = (_activeCameraTypes.count() > _mainStreamIndex)
+            ? _activeCameraTypes[_mainStreamIndex] : QString();
+        _pendingVideoUri = _activeStreamUrls[_mainStreamIndex];
+        _pendingVideoStart = true;
+        emit videoStartPendingChanged();
+
+        qCDebug(LinksManagerLog) << "Pending video start for URI:" << _pendingVideoUri;
+
+        // Check if parameters are already ready (use property system since getter is private)
+        bool parametersReady = MultiVehicleManager::instance()->property("parameterReadyVehicleAvailable").toBool();
+        if (parametersReady) {
+            qCDebug(LinksManagerLog) << "Parameters already ready, starting video immediately";
+            _startPendingVideo();
+        } else {
+            qCDebug(LinksManagerLog) << "Waiting for parameters, starting" << kVideoStartTimeoutMs << "ms timeout";
+            _videoStartTimeoutTimer->start(kVideoStartTimeoutMs);
         }
-        VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
     }
 
     // Find and connect the corresponding comm link
@@ -154,6 +180,9 @@ void LinksManagerController::deactivateLink()
     if (!_activeLink) {
         return;
     }
+
+    // Cancel any pending video start
+    _cancelPendingVideo();
 
     // Disconnect the comm link before deactivating
     _disconnectCommLink(_activeLink);
@@ -222,9 +251,15 @@ void LinksManagerController::setMainStreamIndex(int index)
     if (_mainStreamIndex != index && index >= 0 && index < _activeStreamUrls.count()) {
         _mainStreamIndex = index;
 
-        // Update VideoManager with the new main stream URL and camera type for GStreamer playback
-        // Note: Set camera type BEFORE URI because setOverrideUri triggers video start
-        if (VideoManager::instance()) {
+        // If video start is pending, update the pending values
+        if (_pendingVideoStart) {
+            _pendingCameraType = (_activeCameraTypes.count() > _mainStreamIndex)
+                ? _activeCameraTypes[_mainStreamIndex] : QString();
+            _pendingVideoUri = _activeStreamUrls[_mainStreamIndex];
+            qCDebug(LinksManagerLog) << "Updated pending video to:" << _pendingVideoUri;
+        } else if (VideoManager::instance()) {
+            // Video already running, update immediately
+            // Note: Set camera type BEFORE URI because setOverrideUri triggers video start
             if (_activeCameraTypes.count() > _mainStreamIndex) {
                 VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
             }
@@ -364,6 +399,21 @@ void LinksManagerController::_loadConfigurations()
     if (_activeLink) {
         _updateActiveStreams();
         _updateActiveServoButtons();
+
+        // Set up pending video state for restored link - don't start video yet
+        // Video will start when parameters are ready or timeout occurs
+        if (_activeStreamUrls.count() > 0) {
+            _pendingCameraType = (_activeCameraTypes.count() > _mainStreamIndex)
+                ? _activeCameraTypes[_mainStreamIndex] : QString();
+            _pendingVideoUri = _activeStreamUrls[_mainStreamIndex];
+            _pendingVideoStart = true;
+
+            qCDebug(LinksManagerLog) << "Restored active link with pending video:" << _pendingVideoUri;
+
+            // Start timeout - parameters ready signal will cancel it if FC connects first
+            _videoStartTimeoutTimer->start(kVideoStartTimeoutMs);
+        }
+
         emit activeLinkChanged();
     }
 
@@ -621,18 +671,35 @@ void LinksManagerController::_checkCommLinkState()
         // Sync state: If comm link connected but not active in LinksManager, activate it
         if (commLinkConnected && _activeLink != config) {
             qCDebug(LinksManagerLog) << "Auto-activating link due to comm link connection:" << config->name();
+
+            // Cancel any pending video from previous link
+            _cancelPendingVideo();
+
             _activeLink = config;
             _mainStreamIndex = 0;
             _updateActiveStreams();
             _updateActiveServoButtons();
 
-            // Update VideoManager with the main stream URL and camera type for GStreamer playback
-            // Note: Set camera type BEFORE URI because setOverrideUri triggers video start
+            // Store pending video config instead of starting immediately
+            // This delays video start until FC parameters are loaded to prevent bandwidth contention
             if (_activeStreamUrls.count() > 0 && VideoManager::instance()) {
-                if (_activeCameraTypes.count() > _mainStreamIndex) {
-                    VideoManager::instance()->setOverrideCameraType(_activeCameraTypes[_mainStreamIndex]);
+                _pendingCameraType = (_activeCameraTypes.count() > _mainStreamIndex)
+                    ? _activeCameraTypes[_mainStreamIndex] : QString();
+                _pendingVideoUri = _activeStreamUrls[_mainStreamIndex];
+                _pendingVideoStart = true;
+                emit videoStartPendingChanged();
+
+                qCDebug(LinksManagerLog) << "Pending video start for URI:" << _pendingVideoUri;
+
+                // Check if parameters are already ready (use property system since getter is private)
+                bool parametersReady = MultiVehicleManager::instance()->property("parameterReadyVehicleAvailable").toBool();
+                if (parametersReady) {
+                    qCDebug(LinksManagerLog) << "Parameters already ready, starting video immediately";
+                    _startPendingVideo();
+                } else {
+                    qCDebug(LinksManagerLog) << "Waiting for parameters, starting" << kVideoStartTimeoutMs << "ms timeout";
+                    _videoStartTimeoutTimer->start(kVideoStartTimeoutMs);
                 }
-                VideoManager::instance()->setOverrideUri(_activeStreamUrls[_mainStreamIndex]);
             }
 
             _watchCommLinkForDisconnect(config);
@@ -643,6 +710,9 @@ void LinksManagerController::_checkCommLinkState()
         // If this was active but comm link is now disconnected, deactivate
         else if (!commLinkConnected && _activeLink == config) {
             qCDebug(LinksManagerLog) << "Auto-deactivating link due to comm link disconnection:" << config->name();
+
+            // Cancel any pending video start
+            _cancelPendingVideo();
 
             // Clear VideoManager override to restore default video settings
             if (VideoManager::instance()) {
@@ -720,4 +790,59 @@ ManagedLinkConfiguration* LinksManagerController::_findManagedLinkByCommLinkName
     }
 
     return nullptr;
+}
+
+void LinksManagerController::_startPendingVideo()
+{
+    if (!_pendingVideoStart) {
+        return;
+    }
+
+    _videoStartTimeoutTimer->stop();
+
+    qCDebug(LinksManagerLog) << "Starting pending video:" << _pendingVideoUri;
+
+    if (VideoManager::instance()) {
+        VideoManager::instance()->setOverrideCameraType(_pendingCameraType);
+        VideoManager::instance()->setOverrideUri(_pendingVideoUri);
+    }
+
+    _pendingVideoStart = false;
+    _pendingVideoUri.clear();
+    _pendingCameraType.clear();
+
+    emit videoStartPendingChanged();
+    emit videoStartReady();
+}
+
+void LinksManagerController::_cancelPendingVideo()
+{
+    if (!_pendingVideoStart) {
+        return;
+    }
+
+    qCDebug(LinksManagerLog) << "Canceling pending video";
+
+    _videoStartTimeoutTimer->stop();
+    _pendingVideoStart = false;
+    _pendingVideoUri.clear();
+    _pendingCameraType.clear();
+
+    emit videoStartPendingChanged();
+}
+
+void LinksManagerController::_onParameterReadyVehicleAvailableChanged(bool available)
+{
+    if (available && _pendingVideoStart) {
+        qCDebug(LinksManagerLog) << "Parameters ready, starting pending video";
+        _startPendingVideo();
+    }
+}
+
+void LinksManagerController::_onVideoStartTimeout()
+{
+    if (_pendingVideoStart) {
+        qCDebug(LinksManagerLog) << "Video start timeout reached, starting video without parameters";
+        _startPendingVideo();
+    }
 }

@@ -32,6 +32,7 @@ class LinksManagerController : public QObject
     Q_PROPERTY(QStringList activeStreamUrls READ activeStreamUrls NOTIFY activeStreamsChanged)
     Q_PROPERTY(QStringList activeCameraTypes READ activeCameraTypes NOTIFY activeStreamsChanged)
     Q_PROPERTY(int mainStreamIndex READ mainStreamIndex WRITE setMainStreamIndex NOTIFY mainStreamIndexChanged)
+    Q_PROPERTY(bool videoStartPending READ isVideoStartPending NOTIFY videoStartPendingChanged)
 
     // Servo buttons for active link
     Q_PROPERTY(QVariantList activeServoButtons READ activeServoButtons NOTIFY activeServoButtonsChanged)
@@ -52,6 +53,7 @@ public:
 
     int mainStreamIndex() const { return _mainStreamIndex; }
     Q_INVOKABLE void setMainStreamIndex(int index);
+    bool isVideoStartPending() const { return _pendingVideoStart; }
 
     // CRUD operations
     Q_INVOKABLE ManagedLinkConfiguration* createConfiguration(const QString &name = QString());
@@ -80,6 +82,8 @@ signals:
     void activeStreamsChanged();
     void activeServoButtonsChanged();
     void mainStreamIndexChanged();
+    void videoStartPendingChanged();
+    void videoStartReady();
     void linksChanged();
     void testConnectionResult(ManagedLinkConfiguration *config, bool success, const QString &message);
     void importExportResult(bool success, const QString &message);
@@ -87,6 +91,8 @@ signals:
 private slots:
     void _checkCommLinkState();
     void _onCommLinkDisconnected();
+    void _onParameterReadyVehicleAvailableChanged(bool available);
+    void _onVideoStartTimeout();
 
 private:
     void _loadConfigurations();
@@ -100,6 +106,8 @@ private:
     void _watchCommLinkForDisconnect(ManagedLinkConfiguration *config);
     ManagedLinkConfiguration* _findManagedLinkByCommLinkName(const QString &commLinkName);
     QString _commLinkName(const QString &managedLinkName) const;
+    void _startPendingVideo();
+    void _cancelPendingVideo();
 
     QmlObjectListModel *_managedLinks = nullptr;
     ManagedLinkConfiguration *_activeLink = nullptr;
@@ -111,6 +119,13 @@ private:
     QStringList _activeCameraTypes;
     QVariantList _activeServoButtons;
     int _mainStreamIndex = 0;
+
+    // Pending video start state (delays video until FC parameters ready)
+    bool _pendingVideoStart = false;
+    QString _pendingVideoUri;
+    QString _pendingCameraType;
+    QTimer *_videoStartTimeoutTimer = nullptr;
+    static constexpr int kVideoStartTimeoutMs = 10000;
 
     static constexpr const char* kSettingsGroup = "LinksManager";
     static constexpr const char* kLinkCountKey = "LinkCount";

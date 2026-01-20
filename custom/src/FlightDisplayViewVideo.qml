@@ -85,11 +85,13 @@ Item {
         z: 1  // Above standard video
 
         // Retry timer for failed connections (only when using FFmpeg fallback)
+        // Don't retry while video start is pending (waiting for FC parameters)
+        readonly property bool _videoStartPending: _linksManager ? _linksManager.videoStartPending : false
         Timer {
             id: retryTimer
             interval: 3000  // Retry every 3 seconds for faster reconnection
             repeat: true
-            running: _hasLinksManagerStream && !_videoManagerHasOverride && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
+            running: _hasLinksManagerStream && !_videoManagerHasOverride && !linksManagerVideo._videoStartPending && linksMediaPlayer.playbackState !== MediaPlayer.PlayingState
 
             onTriggered: {
                 if (root._mainStreamUrl.length > 0) {
@@ -107,7 +109,7 @@ Item {
             id: connectionTimeoutTimer
             interval: 5000  // 5 second connection timeout
             repeat: false
-            running: _hasLinksManagerStream && !_videoManagerHasOverride && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
+            running: _hasLinksManagerStream && !_videoManagerHasOverride && !linksManagerVideo._videoStartPending && linksMediaPlayer.mediaStatus === MediaPlayer.LoadingMedia
 
             onTriggered: {
                 console.log("Connection timeout for stream: " + root._mainStreamName + " - forcing retry")
@@ -118,15 +120,10 @@ Item {
 
         MediaPlayer {
             id: linksMediaPlayer
-            source: root.makeLowLatencyUrl(root._mainStreamUrl)
+            // Source is set manually when video is ready to start (not bound to URL directly)
+            // This allows delaying video start until FC parameters are loaded
             videoOutput: linksVideoOutput
-            autoPlay: true
-
-            onSourceChanged: {
-                if (source.toString().length > 0) {
-                    play()
-                }
-            }
+            autoPlay: false
 
             onPlaybackStateChanged: {
                 if (playbackState === MediaPlayer.PlayingState) {
@@ -421,8 +418,9 @@ Item {
     Connections {
         target: _linksManager
         function onActiveStreamsChanged() {
-            // Only handle for FFmpeg fallback
-            if (_hasLinksManagerStream && !_videoManagerHasOverride && root._mainStreamUrl.length > 0) {
+            // Only handle for FFmpeg fallback, and not while video start is pending (waiting for FC parameters)
+            var videoStartPending = _linksManager ? _linksManager.videoStartPending : false
+            if (_hasLinksManagerStream && !_videoManagerHasOverride && !videoStartPending && root._mainStreamUrl.length > 0) {
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
                 linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
@@ -431,7 +429,9 @@ Item {
         }
         function onMainStreamIndexChanged() {
             // Only handle for FFmpeg fallback - GStreamer stream index change is handled by LinksManagerController -> VideoManager
-            if (_hasLinksManagerStream && !_videoManagerHasOverride) {
+            // Don't start while video start is pending (waiting for FC parameters)
+            var videoStartPending = _linksManager ? _linksManager.videoStartPending : false
+            if (_hasLinksManagerStream && !_videoManagerHasOverride && !videoStartPending) {
                 // Force source reload when main stream index changes
                 linksMediaPlayer.stop()
                 linksMediaPlayer.source = ""
@@ -442,6 +442,16 @@ Item {
                     linksMediaPlayer.source = root.makeLowLatencyUrl(newUrl)
                     linksMediaPlayer.play()
                 }
+            }
+        }
+        function onVideoStartReady() {
+            // Video is now ready to start - trigger FFmpeg fallback if needed
+            if (_hasLinksManagerStream && !_videoManagerHasOverride && root._mainStreamUrl.length > 0) {
+                console.log("Video start ready, starting FFmpeg fallback for main stream")
+                linksMediaPlayer.stop()
+                linksMediaPlayer.source = ""
+                linksMediaPlayer.source = root.makeLowLatencyUrl(root._mainStreamUrl)
+                linksMediaPlayer.play()
             }
         }
     }
