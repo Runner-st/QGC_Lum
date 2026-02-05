@@ -893,7 +893,9 @@ VideoReceiver* VideoManager::createPipReceiver(const QString &name, const QStrin
     receiver->setName(name);
     receiver->setUri(uri);
     receiver->setCameraType(cameraType);
-    receiver->setLowLatency(true);
+    // Use user's low latency setting instead of forcing it
+    // Forced low latency (buffer=-1) breaks C12 streaming through NAT/port forwarding
+    receiver->setLowLatency(_videoSettings->lowLatencyMode()->rawValue().toBool());
 
     // Note: Widget and sink will be set later when QML item is loaded
 
