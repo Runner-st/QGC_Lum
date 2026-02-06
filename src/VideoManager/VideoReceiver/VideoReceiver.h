@@ -41,6 +41,7 @@ public:
     QString cameraType() const { return _cameraType; }
     bool started() const { return _started; }
     bool lowLatency() const { return _lowLatency; }
+    bool portForwarded() const { return _portForwarded; }
     bool streaming() const { return _streaming; }
     bool decoding() const { return _decoding; }
     QGCVideoStreamInfo *videoStreamInfo() { return _videoStreamInfo; }
@@ -53,6 +54,7 @@ public:
     void setCameraType(const QString &cameraType) { if (cameraType != _cameraType) { _cameraType = cameraType; emit cameraTypeChanged(_cameraType); } }
     void setStarted(bool started) { if (started != _started) { _started = started; emit startedChanged(_started); } }
     void setLowLatency(bool lowLatency) { if (lowLatency != _lowLatency) { _lowLatency = lowLatency; emit lowLatencyChanged(_lowLatency); } }
+    void setPortForwarded(bool portForwarded) { if (portForwarded != _portForwarded) { _portForwarded = portForwarded; emit portForwardedChanged(_portForwarded); } }
     void setVideoStreamInfo(QGCVideoStreamInfo *videoStreamInfo) { if (videoStreamInfo != _videoStreamInfo) { _videoStreamInfo = videoStreamInfo; emit videoStreamInfoChanged(); } }
 
     // QMediaFormat::FileFormat
@@ -92,6 +94,7 @@ signals:
     void cameraTypeChanged(const QString &cameraType);
     void startedChanged(bool started);
     void lowLatencyChanged(bool lowLatency);
+    void portForwardedChanged(bool portForwarded);
     void videoStreamInfoChanged();
     void widgetChanged(QQuickItem *widget);
 
@@ -124,6 +127,7 @@ protected:
     bool _recording = false;
     bool _streaming = false;
     bool _lowLatency = false;
+    bool _portForwarded = false;
     bool _resetVideoSink = false;
     bool _endOfStream = false;
     bool _removingDecoder = false;

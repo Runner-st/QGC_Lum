@@ -872,10 +872,34 @@ void VideoManager::clearOverrideUri()
         qCDebug(VideoManagerLog) << "Clearing override URI";
         _overrideUri.clear();
         _overrideCameraType.clear();
+        _portForwarded = false;
         emit overrideUriChanged();
+        emit portForwardedChanged();
 
         // Trigger full video source change to restore default settings
         _videoSourceChanged();
+    }
+}
+
+void VideoManager::setPortForwarded(bool portForwarded)
+{
+    if (_portForwarded != portForwarded) {
+        qCDebug(VideoManagerLog) << "Setting port forwarded:" << portForwarded;
+        _portForwarded = portForwarded;
+        emit portForwardedChanged();
+
+        // Update all receivers with the new setting
+        for (VideoReceiver *receiver : std::as_const(_videoReceivers)) {
+            receiver->setPortForwarded(portForwarded);
+        }
+        for (VideoReceiver *receiver : std::as_const(_pipReceivers)) {
+            receiver->setPortForwarded(portForwarded);
+        }
+
+        // Restart video to apply the new transport settings
+        if (!_overrideUri.isEmpty()) {
+            _restartAllVideos();
+        }
     }
 }
 
@@ -896,6 +920,8 @@ VideoReceiver* VideoManager::createPipReceiver(const QString &name, const QStrin
     // Use user's low latency setting instead of forcing it
     // Forced low latency (buffer=-1) breaks C12 streaming through NAT/port forwarding
     receiver->setLowLatency(_videoSettings->lowLatencyMode()->rawValue().toBool());
+    // Pass port forwarding setting from VideoManager
+    receiver->setPortForwarded(_portForwarded);
 
     // Note: Widget and sink will be set later when QML item is loaded
 

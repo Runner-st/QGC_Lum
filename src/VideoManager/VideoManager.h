@@ -52,6 +52,7 @@ class VideoManager : public QObject
     Q_PROPERTY(QString  uvcVideoSourceID        READ uvcVideoSourceID                           NOTIFY uvcVideoSourceIDChanged)
     Q_PROPERTY(bool     hasOverrideUri          READ hasOverrideUri                             NOTIFY overrideUriChanged)
     Q_PROPERTY(QString  overrideUri             READ overrideUri                                NOTIFY overrideUriChanged)
+    Q_PROPERTY(bool     portForwarded           READ portForwarded      WRITE setPortForwarded  NOTIFY portForwardedChanged)
 
 public:
     explicit VideoManager(QObject *parent = nullptr);
@@ -68,7 +69,9 @@ public:
     // Override URI for external sources (e.g., LinksManager)
     Q_INVOKABLE void setOverrideUri(const QString &uri);
     Q_INVOKABLE void setOverrideCameraType(const QString &cameraType);
+    Q_INVOKABLE void setPortForwarded(bool portForwarded);
     Q_INVOKABLE void clearOverrideUri();
+    bool portForwarded() const { return _portForwarded; }
     bool hasOverrideUri() const { return !_overrideUri.isEmpty(); }
     QString overrideUri() const { return _overrideUri; }
 
@@ -118,6 +121,7 @@ signals:
     void uvcVideoSourceIDChanged();
     void videoSizeChanged();
     void overrideUriChanged();
+    void portForwardedChanged();
     void pipReceiversChanged();
 
 private slots:
@@ -153,6 +157,7 @@ private:
     QString _uvcVideoSourceID;
     QString _overrideUri;
     QString _overrideCameraType;
+    bool _portForwarded = false;
     Vehicle *_activeVehicle = nullptr;
 };
 

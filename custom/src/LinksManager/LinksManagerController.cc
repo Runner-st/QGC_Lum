@@ -804,6 +804,15 @@ void LinksManagerController::_startPendingVideo()
 
     if (VideoManager::instance()) {
         VideoManager::instance()->setOverrideCameraType(_pendingCameraType);
+
+        // Set port forwarding mode from active camera configuration
+        bool portForwarded = false;
+        if (_activeLink && _activeLink->camera1()) {
+            portForwarded = _activeLink->camera1()->isPortForwarded();
+        }
+        VideoManager::instance()->setPortForwarded(portForwarded);
+        qCDebug(LinksManagerLog) << "Port forwarded mode:" << portForwarded;
+
         VideoManager::instance()->setOverrideUri(_pendingVideoUri);
     }
 

@@ -127,6 +127,14 @@ void CameraConfiguration::setTopotekControlPort(int port)
     }
 }
 
+void CameraConfiguration::setPortForwarded(bool portForwarded)
+{
+    if (_portForwarded != portForwarded) {
+        _portForwarded = portForwarded;
+        emit portForwardedChanged();
+    }
+}
+
 void CameraConfiguration::applyPreset()
 {
     switch (_cameraType) {
@@ -190,6 +198,9 @@ void CameraConfiguration::copyFrom(const CameraConfiguration *source)
     setTopotekRtsp2Suffix(source->topotekRtsp2Suffix());
     setTopotekControlPort(source->topotekControlPort());
 
+    // Copy port forwarding setting
+    setPortForwarded(source->isPortForwarded());
+
     _stream1->copyFrom(source->stream1());
     _stream2->copyFrom(source->stream2());
 }
@@ -211,6 +222,9 @@ void CameraConfiguration::loadSettings(QSettings &settings, const QString &root)
     _topotekRtsp1Suffix = settings.value("topotekRtsp1Suffix", "554/stream=0").toString();
     _topotekRtsp2Suffix = settings.value("topotekRtsp2Suffix", "554/stream=1").toString();
     _topotekControlPort = settings.value("topotekControlPort", 9003).toInt();
+
+    // Load port forwarding setting
+    _portForwarded = settings.value("portForwarded", false).toBool();
 
     settings.endGroup();
 
@@ -236,6 +250,9 @@ void CameraConfiguration::saveSettings(QSettings &settings, const QString &root)
     settings.setValue("topotekRtsp2Suffix", _topotekRtsp2Suffix);
     settings.setValue("topotekControlPort", _topotekControlPort);
 
+    // Save port forwarding setting
+    settings.setValue("portForwarded", _portForwarded);
+
     settings.endGroup();
 
     _stream1->saveSettings(settings, root + "/Stream0");
@@ -254,6 +271,7 @@ QJsonObject CameraConfiguration::toJson() const
         json["c12Rtsp1Suffix"] = _c12Rtsp1Suffix;
         json["c12Rtsp2Suffix"] = _c12Rtsp2Suffix;
         json["c12ControlPort"] = _c12ControlPort;
+        json["portForwarded"] = _portForwarded;
     }
 
     // Add Topotek-specific properties
@@ -289,6 +307,9 @@ void CameraConfiguration::fromJson(const QJsonObject &json)
     }
     if (json.contains("c12ControlPort")) {
         setC12ControlPort(json["c12ControlPort"].toInt(5000));
+    }
+    if (json.contains("portForwarded")) {
+        setPortForwarded(json["portForwarded"].toBool());
     }
 
     // Load Topotek-specific properties if present

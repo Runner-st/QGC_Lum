@@ -217,6 +217,26 @@ Rectangle {
                 color: qgcPal.textFieldText
                 wrapMode: Text.WordWrap
             }
+
+            // Port Forwarded Connection checkbox
+            QGCCheckBox {
+                text: qsTr("Port Forwarded Connection")
+                checked: cameraConfig ? cameraConfig.portForwarded : false
+                onCheckedChanged: {
+                    if (cameraConfig) {
+                        cameraConfig.portForwarded = checked
+                    }
+                }
+            }
+
+            // Port Forwarding Info Label
+            QGCLabel {
+                Layout.fillWidth: true
+                text: qsTr("Enable if connecting through NAT/port forwarding. Uses TCP transport instead of UDP.")
+                font.pointSize: ScreenTools.smallFontPointSize
+                color: qgcPal.textFieldText
+                wrapMode: Text.WordWrap
+            }
         }
 
         // Topotek Camera Configuration (only visible when TopotekKHP290A609 selected)

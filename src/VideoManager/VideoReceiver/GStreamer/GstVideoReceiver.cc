@@ -661,15 +661,27 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
 
             // Apply camera-specific RTSP properties for optimal compatibility
             if (_cameraType == QStringLiteral("SkydroidC12")) {
-                // Skydroid C12: Use TCP interleaved transport for NAT/port forwarding compatibility
-                // TCP mode sends RTP data through the same connection as RTSP signaling,
-                // avoiding issues with UDP RTP ports not being forwarded
-                g_object_set(source,
-                             "location", input.toUtf8().constData(),
-                             "latency", 200,
-                             "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - TCP interleaved
-                             "timeout", 10000000,  // 10 seconds in microseconds
-                             nullptr);
+                if (_portForwarded) {
+                    // Skydroid C12 with port forwarding: Use TCP interleaved transport
+                    // TCP mode sends RTP data through the same connection as RTSP signaling,
+                    // avoiding issues with UDP RTP ports not being forwarded through NAT
+                    g_object_set(source,
+                                 "location", input.toUtf8().constData(),
+                                 "latency", 200,
+                                 "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - TCP interleaved
+                                 "timeout", 10000000,  // 10 seconds in microseconds
+                                 nullptr);
+                    qCDebug(GstVideoReceiverLog) << "C12 using TCP interleaved transport (port forwarded)";
+                } else {
+                    // Skydroid C12 direct connection: Use UDP with low latency settings
+                    g_object_set(source,
+                                 "location", input.toUtf8().constData(),
+                                 "latency", 17,
+                                 "udp-reconnect", 1,
+                                 "timeout", 5000000,  // 5 seconds in microseconds
+                                 nullptr);
+                    qCDebug(GstVideoReceiverLog) << "C12 using UDP transport (direct connection)";
+                }
             } else if (_cameraType == QStringLiteral("TopotekKHP290A609")) {
                 // Topotek KHP290A609: UDP transport with buffering disabled for low latency
                 g_object_set(source,

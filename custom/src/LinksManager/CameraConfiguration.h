@@ -32,6 +32,7 @@ class CameraConfiguration : public QObject
     Q_PROPERTY(QString topotekRtsp1Suffix READ topotekRtsp1Suffix WRITE setTopotekRtsp1Suffix NOTIFY topotekRtsp1SuffixChanged)
     Q_PROPERTY(QString topotekRtsp2Suffix READ topotekRtsp2Suffix WRITE setTopotekRtsp2Suffix NOTIFY topotekRtsp2SuffixChanged)
     Q_PROPERTY(int topotekControlPort READ topotekControlPort WRITE setTopotekControlPort NOTIFY topotekControlPortChanged)
+    Q_PROPERTY(bool portForwarded READ isPortForwarded WRITE setPortForwarded NOTIFY portForwardedChanged)
 
 public:
     enum CameraType {
@@ -79,6 +80,9 @@ public:
     int topotekControlPort() const { return _topotekControlPort; }
     void setTopotekControlPort(int port);
 
+    bool isPortForwarded() const { return _portForwarded; }
+    void setPortForwarded(bool portForwarded);
+
     Q_INVOKABLE void applyPreset();
 
     bool isEmpty() const;
@@ -109,6 +113,7 @@ signals:
     void topotekRtsp1SuffixChanged();
     void topotekRtsp2SuffixChanged();
     void topotekControlPortChanged();
+    void portForwardedChanged();
 
 private:
     QString _name;
@@ -123,4 +128,5 @@ private:
     QString _topotekRtsp1Suffix = QStringLiteral("554/stream=0");
     QString _topotekRtsp2Suffix = QStringLiteral("554/stream=1");
     int _topotekControlPort = 9003;
+    bool _portForwarded = false;
 };
