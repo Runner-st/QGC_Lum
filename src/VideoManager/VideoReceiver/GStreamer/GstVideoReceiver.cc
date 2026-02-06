@@ -661,12 +661,14 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
 
             // Apply camera-specific RTSP properties for optimal compatibility
             if (_cameraType == QStringLiteral("SkydroidC12")) {
-                // Skydroid C12: Low latency with UDP reconnect for reliable streaming
+                // Skydroid C12: Use TCP interleaved transport for NAT/port forwarding compatibility
+                // TCP mode sends RTP data through the same connection as RTSP signaling,
+                // avoiding issues with UDP RTP ports not being forwarded
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
-                             "latency", 17,
-                             "udp-reconnect", 1,
-                             "timeout", 5000000,  // 5 seconds in microseconds
+                             "latency", 200,
+                             "protocols", 4,  // GST_RTSP_LOWER_TRANS_TCP - TCP interleaved
+                             "timeout", 10000000,  // 10 seconds in microseconds
                              nullptr);
             } else if (_cameraType == QStringLiteral("TopotekKHP290A609")) {
                 // Topotek KHP290A609: UDP transport with buffering disabled for low latency
