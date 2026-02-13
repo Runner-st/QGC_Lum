@@ -19,6 +19,7 @@
 #include "Camera/TopotekController.h"
 
 class QQmlApplicationEngine;
+class HerelinkVideoStreamControl;
 
 Q_DECLARE_LOGGING_CATEGORY(ServoControlLog)
 
@@ -37,6 +38,7 @@ class ServoControlPlugin : public QGCCorePlugin
     Q_PROPERTY(LinksManagerController* linksManager READ linksManager CONSTANT)
     Q_PROPERTY(C12Controller* c12Controller READ c12Controller CONSTANT)
     Q_PROPERTY(TopotekController* topotekController READ topotekController CONSTANT)
+    Q_PROPERTY(HerelinkVideoStreamControl* herelinkVideoStream READ herelinkVideoStream CONSTANT)
 
 public:
     explicit ServoControlPlugin(QObject *parent = nullptr);
@@ -48,6 +50,7 @@ public:
     LinksManagerController* linksManager() const { return _linksManager; }
     C12Controller* c12Controller() const { return _c12Controller; }
     TopotekController* topotekController() const { return _topotekController; }
+    HerelinkVideoStreamControl* herelinkVideoStream() const { return _herelinkVideoStream; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -86,4 +89,5 @@ private:
     LinksManagerController *_linksManager = nullptr;
     C12Controller *_c12Controller = nullptr;
     TopotekController *_topotekController = nullptr;
+    HerelinkVideoStreamControl *_herelinkVideoStream = nullptr;
 };

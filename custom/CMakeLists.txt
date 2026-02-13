@@ -8,6 +8,8 @@ set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .q
 set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ServoControlPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/HerelinkVideoStreamControl.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/HerelinkVideoStreamControl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/C12Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera/TopotekController.cc

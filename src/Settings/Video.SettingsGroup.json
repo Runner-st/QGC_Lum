@@ -134,6 +134,13 @@
     "enumStrings":      "Default,Force software decoder,Force NVIDIA decoder,Force VA-API decoder,Force DirectX3D 11 decoder,Force VideoToolbox decoder,Force Intel decoder,Force Vulkan decoder",
     "enumValues":       "0,1,2,3,4,5,6,7",
     "default":           0
+},
+{
+    "name":             "cameraId",
+    "shortDesc":        "Camera ID",
+    "longDesc":         "Camera ID for Herelink HDMI input selection (0=HDMI1, 1=HDMI2).",
+    "type":             "uint32",
+    "default":          0
 }
 ]
 }

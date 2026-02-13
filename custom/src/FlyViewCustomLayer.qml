@@ -34,6 +34,8 @@ Item {
     readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
     readonly property bool _hasC12Camera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 2
     readonly property bool _hasTopotekCamera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 3
+    readonly property bool _hasHerelinkCamera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 1
+    readonly property var  _herelinkStream: _hasCorePlugin ? QGroundControl.corePlugin.herelinkVideoStream : null
 
     // Debug logging function
     function debugWidgetState() {
@@ -119,7 +121,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.rightMargin: _margin
 
-        visible: _hasC12Camera || _hasTopotekCamera
+        visible: _hasC12Camera || _hasTopotekCamera || _hasHerelinkCamera
         width: widgetColumn.width
         height: widgetColumn.height
         color: "transparent"
@@ -129,6 +131,23 @@ Item {
         Column {
             id: widgetColumn
             spacing: _margin
+
+            // Herelink HDMI Switch Button
+            QGCButton {
+                visible: _hasHerelinkCamera
+                enabled: !(_herelinkStream && _herelinkStream.settingInProgress)
+                text: {
+                    var videoSettings = QGroundControl.settingsManager.videoSettings
+                    return videoSettings.cameraId.rawValue === 0 ? qsTr("HDMI1") : qsTr("HDMI2")
+                }
+                width: Math.max(ScreenTools.defaultFontPixelWidth * 8, implicitWidth)
+                height: ScreenTools.defaultFontPixelHeight * 2.5
+                onClicked: {
+                    if (_herelinkStream) {
+                        _herelinkStream.switchHdmiSource()
+                    }
+                }
+            }
 
             // C12 Camera Widget
             Loader {

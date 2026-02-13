@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 #include "ServoControlPlugin.h"
+#include "HerelinkVideoStreamControl.h"
 #include "LinksManager/LinksManagerController.h"
 #include "LinksManager/ManagedLinkConfiguration.h"
 #include "LinksManager/CameraConfiguration.h"
@@ -55,6 +56,9 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     // Connect to active link changes to update C12 control address
     connect(_linksManager, &LinksManagerController::activeLinkChanged,
             this, &ServoControlPlugin::_updateC12ControlAddress);
+
+    // Initialize Herelink Video Stream Control
+    _herelinkVideoStream = new HerelinkVideoStreamControl(this);
 
     // Initialize Topotek Controller
     _topotekController = new TopotekController(this);
