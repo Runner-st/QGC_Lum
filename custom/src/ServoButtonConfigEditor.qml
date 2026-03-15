@@ -143,9 +143,9 @@ Rectangle {
                 QGCTextField {
                     id: pulseField
                     Layout.fillWidth: true
-                    placeholderText: qsTr("500-3000")
+                    placeholderText: qsTr("0-3000")
                     inputMethodHints: Qt.ImhDigitsOnly
-                    validator: IntValidator { bottom: 500; top: 3000 }
+                    validator: IntValidator { bottom: 0; top: 3000 }
                 }
             }
 

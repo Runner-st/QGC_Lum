@@ -45,7 +45,7 @@ public:
 
     static constexpr int MIN_CHANNEL = 1;
     static constexpr int MAX_CHANNEL = 18;
-    static constexpr int MIN_PULSE = 500;
+    static constexpr int MIN_PULSE = 0;
     static constexpr int MAX_PULSE = 3000;
     static constexpr int DEFAULT_PULSE = 1500;
 
