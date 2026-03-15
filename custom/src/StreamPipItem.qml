@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 import QtQuick
+import QtQuick.Window
 import org.freedesktop.gstreamer.Qt6GLVideoItem
 
 import QGroundControl
@@ -25,12 +26,32 @@ Item {
 
     // Hide/show state
     property bool _isExpanded: true
+    property bool _isDetached: false
 
     // Actual height when expanded vs collapsed
-    implicitHeight: _isExpanded ? width * (9/16) : ScreenTools.defaultFontPixelHeight * 2
+    implicitHeight: _isDetached ? ScreenTools.defaultFontPixelHeight * 2
+                                : (_isExpanded ? width * (9/16) : ScreenTools.defaultFontPixelHeight * 2)
 
     function _setExpanded(expanded) {
         _isExpanded = expanded
+    }
+
+    function _detach() {
+        if (videoReceiver) videoReceiver.stop()
+        pipContent.parent = detachWindow.contentItem
+        pipContent.anchors.fill = pipContent.parent
+        _isDetached = true
+        detachWindow.show()
+        detachRestartTimer.start()
+    }
+
+    function _reattach() {
+        if (videoReceiver) videoReceiver.stop()
+        detachWindow.hide()
+        pipContent.parent = pipContentContainer
+        pipContent.anchors.fill = pipContentContainer
+        _isDetached = false
+        detachRestartTimer.start()
     }
 
     // Force restart the stream (called by StreamPipColumn on reconnection)
@@ -90,9 +111,9 @@ Item {
         id: retryTimer
         interval: 3000  // Retry every 3 seconds
         repeat: true
-        // Run when: have URL, have receiver, NOT decoding (stuck or failed), expanded, not in other timers
-        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.decoding && _isExpanded &&
-                 !delayedStartTimer.running && !forceRestartTimer.running
+        // Run when: have URL, have receiver, NOT decoding (stuck or failed), expanded or detached, not in other timers
+        running: root.streamUrl.length > 0 && videoReceiver && !videoReceiver.decoding && (_isExpanded || _isDetached) &&
+                 !delayedStartTimer.running && !forceRestartTimer.running && !detachRestartTimer.running
 
         onTriggered: {
             if (root.streamUrl.length > 0 && videoReceiver) {
@@ -122,7 +143,7 @@ Item {
         }
         repeat: false
         // Run when streaming started but decoding hasn't begun
-        running: root.streamUrl.length > 0 && videoReceiver && videoReceiver.streaming && !videoReceiver.decoding && _isExpanded
+        running: root.streamUrl.length > 0 && videoReceiver && videoReceiver.streaming && !videoReceiver.decoding && (_isExpanded || _isDetached)
 
         onTriggered: {
             console.log("Connection timeout for PIP stream: " + root.streamName + " - streaming but not decoding, forcing retry")
@@ -143,6 +164,24 @@ Item {
                 console.log("PIP C12: Starting delayed connection to: " + root.streamName)
                 var timeout = 10000  // C12 gets longer timeout
                 videoReceiver.start(timeout)
+            }
+        }
+    }
+
+    // Timer for delayed video restart after detach/reattach reparenting
+    Timer {
+        id: detachRestartTimer
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            if (videoReceiver && root.streamUrl.length > 0) {
+                console.log("PIP " + root.streamName + " restarting after detach/reattach")
+                var isC12 = root.cameraType.toLowerCase().indexOf("skydroidc12") >= 0
+                if (isC12) {
+                    delayedStartTimer.start()
+                } else {
+                    videoReceiver.start(5000)
+                }
             }
         }
     }
@@ -188,11 +227,28 @@ Item {
         }
     }
 
-    // Main PIP container - visible when expanded
+    // Detached window for popout viewing
+    Window {
+        id: detachWindow
+        visible: false
+        width: 640
+        height: 360
+        title: root.streamName
+        onClosing: root._reattach()
+    }
+
+    // Container that holds pipContent when not detached
+    Item {
+        id: pipContentContainer
+        anchors.fill: parent
+        visible: _isExpanded && !_isDetached
+    }
+
+    // Main PIP container - reparented between pipContentContainer and detachWindow
     Item {
         id: pipContent
+        parent: pipContentContainer
         anchors.fill: parent
-        visible: _isExpanded
         clip: true
 
         // GStreamer video item
@@ -241,11 +297,11 @@ Item {
         }
     }
 
-    // Click handler - swap this stream to main view (only when expanded)
+    // Click handler - swap this stream to main view (only when expanded and not detached)
     MouseArea {
         id: pipMouseArea
         anchors.fill: parent
-        enabled: _isExpanded
+        enabled: _isExpanded && !_isDetached
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
 
@@ -264,10 +320,29 @@ Item {
         fillMode: Image.PreserveAspectFit
         anchors.right: parent.right
         anchors.top: parent.top
-        visible: _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        visible: _isExpanded && !_isDetached && (ScreenTools.isMobile || pipMouseArea.containsMouse)
         height: ScreenTools.defaultFontPixelHeight * 2.5
         width: ScreenTools.defaultFontPixelHeight * 2.5
         sourceSize.height: height
+    }
+
+    // Detach icon (top-left) - popout stream to separate window
+    Image {
+        id: detachIcon
+        source: "/qmlimages/PiP.svg"
+        mipmap: true
+        fillMode: Image.PreserveAspectFit
+        anchors.left: parent.left
+        anchors.top: parent.top
+        visible: _isExpanded && !_isDetached && !ScreenTools.isMobile && pipMouseArea.containsMouse
+        height: ScreenTools.defaultFontPixelHeight * 2.5
+        width: ScreenTools.defaultFontPixelHeight * 2.5
+        sourceSize.height: height
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root._detach()
+        }
     }
 
     // Hide icon (bottom-left) - matches stock PIP hide icon
@@ -278,7 +353,7 @@ Item {
         fillMode: Image.PreserveAspectFit
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        visible: _isExpanded && (ScreenTools.isMobile || pipMouseArea.containsMouse)
+        visible: _isExpanded && !_isDetached && (ScreenTools.isMobile || pipMouseArea.containsMouse)
         height: ScreenTools.defaultFontPixelHeight * 2.5
         width: ScreenTools.defaultFontPixelHeight * 2.5
         sourceSize.height: height
@@ -289,7 +364,8 @@ Item {
         }
     }
 
-    // Show button when collapsed - matches stock PIP show button
+    // Show button when collapsed or detached
+    // When detached, acts as a reattach button
     Rectangle {
         id: showButton
         anchors.left: parent.left
@@ -297,7 +373,7 @@ Item {
         height: ScreenTools.defaultFontPixelHeight * 2
         width: ScreenTools.defaultFontPixelHeight * 2
         radius: ScreenTools.defaultFontPixelHeight / 3
-        visible: !_isExpanded
+        visible: !_isExpanded || _isDetached
         color: Qt.rgba(0, 0, 0, 0.75)
 
         Image {
@@ -313,11 +389,17 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: root._setExpanded(true)
+            onClicked: {
+                if (root._isDetached) {
+                    root._reattach()
+                } else {
+                    root._setExpanded(true)
+                }
+            }
         }
     }
 
-    // Collapsed state label showing stream name
+    // Collapsed/detached state label showing stream name and status
     Rectangle {
         anchors.left: showButton.right
         anchors.leftMargin: 4
@@ -326,12 +408,12 @@ Item {
         width: collapsedLabel.width + ScreenTools.defaultFontPixelWidth
         radius: 4
         color: Qt.rgba(0, 0, 0, 0.75)
-        visible: !_isExpanded
+        visible: !_isExpanded || _isDetached
 
         QGCLabel {
             id: collapsedLabel
             anchors.centerIn: parent
-            text: root.streamName
+            text: root._isDetached ? root.streamName + " (windowed)" : root.streamName
             color: "white"
             font.pointSize: ScreenTools.smallFontPointSize
         }
