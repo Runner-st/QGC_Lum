@@ -28,6 +28,8 @@ Rectangle {
     property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property bool   _communicationLost: _activeVehicle ? _activeVehicle.vehicleLinkManager.communicationLost : false
     property color  _mainStatusBGColor: qgcPal.brandingPurple
+    property var    _linksManager:      QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
+    property bool   _hasActiveLink:     _linksManager !== null && _linksManager.hasActiveLink
 
     function dropMainStatusIndicatorTool() {
         mainStatusIndicator.dropMainStatusIndicator();
@@ -74,6 +76,13 @@ Rectangle {
         MainStatusIndicator {
             id: mainStatusIndicator
             Layout.preferredHeight: viewButtonRow.height
+        }
+
+        QGCButton {
+            id:                 managedDisconnectButton
+            text:               qsTr("Disconnect")
+            onClicked:          _linksManager.deactivateLink()
+            visible:            _hasActiveLink && !_communicationLost
         }
 
         QGCButton {
