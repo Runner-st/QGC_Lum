@@ -27,6 +27,7 @@ class ManagedLinkConfiguration : public QObject
     Q_PROPERTY(QString serverAddress READ serverAddress WRITE setServerAddress NOTIFY serverAddressChanged)
     Q_PROPERTY(quint16 serverPort READ serverPort WRITE setServerPort NOTIFY serverPortChanged)
     Q_PROPERTY(bool autoConnect READ isAutoConnect WRITE setAutoConnect NOTIFY autoConnectChanged)
+    Q_PROPERTY(int camerasCount READ camerasCount WRITE setCamerasCount NOTIFY camerasCountChanged)
     Q_PROPERTY(CameraConfiguration* camera1 READ camera1 CONSTANT)
     Q_PROPERTY(CameraConfiguration* camera2 READ camera2 CONSTANT)
     Q_PROPERTY(QmlObjectListModel* servoButtons READ servoButtons CONSTANT)
@@ -48,6 +49,9 @@ public:
 
     bool isAutoConnect() const { return _autoConnect; }
     void setAutoConnect(bool autoConnect);
+
+    int camerasCount() const { return _camerasCount; }
+    void setCamerasCount(int count);
 
     CameraConfiguration* camera1() const { return _camera1; }
     CameraConfiguration* camera2() const { return _camera2; }
@@ -75,12 +79,14 @@ signals:
     void serverAddressChanged();
     void serverPortChanged();
     void autoConnectChanged();
+    void camerasCountChanged();
 
 private:
     QString _name;
     QString _serverAddress;
     quint16 _serverPort = DEFAULT_UDP_PORT;
     bool _autoConnect = false;
+    int _camerasCount = 1;
     CameraConfiguration *_camera1 = nullptr;
     CameraConfiguration *_camera2 = nullptr;
     QmlObjectListModel *_servoButtons = nullptr;

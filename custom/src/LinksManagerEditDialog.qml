@@ -38,6 +38,7 @@ QGCPopupDialog {
         editingConfig.serverAddress = serverAddressField.text.trim()
         editingConfig.serverPort = parseInt(serverPortField.text)
         editingConfig.autoConnect = autoConnectSwitch.checked
+        editingConfig.camerasCount = camerasCountCombo.currentIndex + 1
 
         if (isNew) {
             _linksManager.addConfiguration(editingConfig)
@@ -145,18 +146,61 @@ QGCPopupDialog {
             }
         }
 
-        // Camera 1 Configuration
-        CameraConfigEditor {
+        // Camera Configuration (count + dynamic Camera 1/2 editors)
+        Rectangle {
             Layout.fillWidth: true
-            heading: qsTr("Camera 1")
-            cameraConfig: editingConfig ? editingConfig.camera1 : null
-        }
+            Layout.preferredHeight: cameraColumn.implicitHeight + ScreenTools.defaultFontPixelHeight
+            color: "transparent"
+            border.color: qgcPal.groupBorder
+            border.width: 1
+            radius: 4
 
-        // Camera 2 Configuration
-        CameraConfigEditor {
-            Layout.fillWidth: true
-            heading: qsTr("Camera 2 (Optional)")
-            cameraConfig: editingConfig ? editingConfig.camera2 : null
+            ColumnLayout {
+                id: cameraColumn
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: ScreenTools.defaultFontPixelHeight / 2
+                spacing: ScreenTools.defaultFontPixelHeight / 2
+
+                QGCLabel {
+                    text: qsTr("Camera Configuration")
+                    font.bold: true
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: ScreenTools.defaultFontPixelWidth
+
+                    QGCLabel {
+                        text: qsTr("Cameras count")
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    QGCComboBox {
+                        id: camerasCountCombo
+                        Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 10
+                        model: [ "1", "2" ]
+                        currentIndex: editingConfig ? Math.max(0, Math.min(1, editingConfig.camerasCount - 1)) : 0
+                    }
+
+                    Item { Layout.fillWidth: true }
+                }
+
+                CameraConfigEditor {
+                    Layout.fillWidth: true
+                    visible: camerasCountCombo.currentIndex >= 0
+                    heading: qsTr("Camera 1")
+                    cameraConfig: editingConfig ? editingConfig.camera1 : null
+                }
+
+                CameraConfigEditor {
+                    Layout.fillWidth: true
+                    visible: camerasCountCombo.currentIndex >= 1
+                    heading: qsTr("Camera 2")
+                    cameraConfig: editingConfig ? editingConfig.camera2 : null
+                }
+            }
         }
 
         // Servo Button Configuration

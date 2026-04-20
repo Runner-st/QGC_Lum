@@ -73,6 +73,16 @@ void ManagedLinkConfiguration::setAutoConnect(bool autoConnect)
     }
 }
 
+void ManagedLinkConfiguration::setCamerasCount(int count)
+{
+    if (count < 1) count = 1;
+    if (count > 2) count = 2;
+    if (_camerasCount != count) {
+        _camerasCount = count;
+        emit camerasCountChanged();
+    }
+}
+
 QStringList ManagedLinkConfiguration::getAllStreamUrls() const
 {
     QStringList urls;
@@ -83,10 +93,10 @@ QStringList ManagedLinkConfiguration::getAllStreamUrls() const
     if (_camera1 && !_camera1->stream2()->isEmpty()) {
         urls.append(_camera1->stream2()->rtspUrl());
     }
-    if (_camera2 && !_camera2->stream1()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream1()->isEmpty()) {
         urls.append(_camera2->stream1()->rtspUrl());
     }
-    if (_camera2 && !_camera2->stream2()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream2()->isEmpty()) {
         urls.append(_camera2->stream2()->rtspUrl());
     }
 
@@ -111,14 +121,14 @@ QStringList ManagedLinkConfiguration::getAllStreamNames() const
         }
         names.append(streamName);
     }
-    if (_camera2 && !_camera2->stream1()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream1()->isEmpty()) {
         QString streamName = _camera2->stream1()->name();
         if (streamName.isEmpty()) {
             streamName = _camera2->name().isEmpty() ? QStringLiteral("Camera 2 - Stream 1") : _camera2->name() + QStringLiteral(" - Stream 1");
         }
         names.append(streamName);
     }
-    if (_camera2 && !_camera2->stream2()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream2()->isEmpty()) {
         QString streamName = _camera2->stream2()->name();
         if (streamName.isEmpty()) {
             streamName = _camera2->name().isEmpty() ? QStringLiteral("Camera 2 - Stream 2") : _camera2->name() + QStringLiteral(" - Stream 2");
@@ -155,10 +165,10 @@ QStringList ManagedLinkConfiguration::getAllCameraTypes() const
     if (_camera1 && !_camera1->stream2()->isEmpty()) {
         types.append(cameraTypeToString(_camera1->cameraType()));
     }
-    if (_camera2 && !_camera2->stream1()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream1()->isEmpty()) {
         types.append(cameraTypeToString(_camera2->cameraType()));
     }
-    if (_camera2 && !_camera2->stream2()->isEmpty()) {
+    if (_camerasCount >= 2 && _camera2 && !_camera2->stream2()->isEmpty()) {
         types.append(cameraTypeToString(_camera2->cameraType()));
     }
 
@@ -173,6 +183,7 @@ void ManagedLinkConfiguration::copyFrom(const ManagedLinkConfiguration *source)
     setServerAddress(source->serverAddress());
     setServerPort(source->serverPort());
     setAutoConnect(source->isAutoConnect());
+    setCamerasCount(source->camerasCount());
     _camera1->copyFrom(source->camera1());
     _camera2->copyFrom(source->camera2());
 
@@ -226,6 +237,7 @@ void ManagedLinkConfiguration::loadSettings(QSettings &settings, const QString &
     _serverAddress = settings.value("serverAddress", QString()).toString();
     _serverPort = static_cast<quint16>(settings.value("serverPort", DEFAULT_UDP_PORT).toUInt());
     _autoConnect = settings.value("autoConnect", false).toBool();
+    _camerasCount = qBound(1, settings.value("camerasCount", 1).toInt(), 2);
     QString servoJson = settings.value("servoButtons", QString()).toString();
     settings.endGroup();
 
@@ -265,6 +277,7 @@ void ManagedLinkConfiguration::saveSettings(QSettings &settings, const QString &
     settings.setValue("serverAddress", _serverAddress);
     settings.setValue("serverPort", _serverPort);
     settings.setValue("autoConnect", _autoConnect);
+    settings.setValue("camerasCount", _camerasCount);
     settings.setValue("servoButtons", QString::fromUtf8(QJsonDocument(servoArray).toJson(QJsonDocument::Compact)));
     settings.endGroup();
 
@@ -279,6 +292,7 @@ QJsonObject ManagedLinkConfiguration::toJson() const
     json["serverAddress"] = _serverAddress;
     json["serverPort"] = static_cast<int>(_serverPort);
     json["autoConnect"] = _autoConnect;
+    json["camerasCount"] = _camerasCount;
 
     QJsonArray camerasArray;
     camerasArray.append(_camera1->toJson());
@@ -304,6 +318,7 @@ void ManagedLinkConfiguration::fromJson(const QJsonObject &json)
     setServerAddress(json["serverAddress"].toString());
     setServerPort(static_cast<quint16>(json["serverPort"].toInt(DEFAULT_UDP_PORT)));
     setAutoConnect(json["autoConnect"].toBool());
+    setCamerasCount(json.contains("camerasCount") ? json["camerasCount"].toInt(1) : 1);
 
     QJsonArray camerasArray = json["cameras"].toArray();
     if (camerasArray.size() > 0) {
