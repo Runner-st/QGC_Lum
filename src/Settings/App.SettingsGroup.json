@@ -9,7 +9,7 @@
     "type":             "uint32",
     "enumStrings":      "ArduPilot,PX4 Pro,Mavlink Generic",
     "enumValues":       "3,12,0",
-    "default":     12
+    "default":     3
 },
 {
     "name":             "offlineEditingVehicleClass",

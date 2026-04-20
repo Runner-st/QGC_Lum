@@ -8,7 +8,7 @@
             "enumStrings": "Percentage,Voltage,Percentage and Voltage",
             "enumValues": "0,1,2",
             "type": "uint32",
-            "default": false
+            "default": 1
         },
         {
             "name": "threshold1",

@@ -7,7 +7,7 @@
     "name":             "defaultFirmwareType",
     "shortDesc": "Default firmware type for flashing",
     "type":             "uint32",
-    "default":     12
+    "default":     3
 },
 {
     "name":             "apmChibiOS",
