@@ -18,6 +18,7 @@ QGCPopupDialog {
     id: root
     title: isNew ? qsTr("Add New Link") : qsTr("Edit Link")
     buttons: Dialog.Save | Dialog.Cancel
+    acceptButtonEnabled: _formValid
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
@@ -28,7 +29,8 @@ QGCPopupDialog {
     readonly property var _linksManager: QGroundControl.corePlugin ? QGroundControl.corePlugin.linksManager : null
     readonly property bool _formValid: nameField.text.trim().length > 0 &&
                                         serverAddressField.text.trim().length > 0 &&
-                                        serverPortField.acceptableInput
+                                        serverPortField.acceptableInput &&
+                                        (!servoEditor || servoEditor.remoteControlFieldsValid)
 
     onAccepted: {
         if (!_formValid || !editingConfig || !_linksManager) return
@@ -205,6 +207,7 @@ QGCPopupDialog {
 
         // Servo Button Configuration
         ServoButtonConfigEditor {
+            id: servoEditor
             Layout.fillWidth: true
             heading: qsTr("Servo Buttons")
             linkConfig: editingConfig
@@ -214,7 +217,7 @@ QGCPopupDialog {
         QGCLabel {
             Layout.fillWidth: true
             visible: !_formValid
-            text: qsTr("Please fill in Link Name and Server Address")
+            text: qsTr("Please fill in Link Name, Server Address, and (if enabled) all Remote device control fields.")
             color: "orange"
             wrapMode: Text.WordWrap
         }

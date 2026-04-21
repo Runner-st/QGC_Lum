@@ -31,6 +31,11 @@ class ManagedLinkConfiguration : public QObject
     Q_PROPERTY(bool autoConnect READ isAutoConnect WRITE setAutoConnect NOTIFY autoConnectChanged)
     Q_PROPERTY(int camerasCount READ camerasCount WRITE setCamerasCount NOTIFY camerasCountChanged)
     Q_PROPERTY(bool mainControlsEnabled READ mainControlsEnabled WRITE setMainControlsEnabled NOTIFY mainControlsEnabledChanged)
+    Q_PROPERTY(bool remoteDeviceControlEnabled READ remoteDeviceControlEnabled WRITE setRemoteDeviceControlEnabled NOTIFY remoteDeviceControlEnabledChanged)
+    Q_PROPERTY(int powerContact       READ powerContact       WRITE setPowerContact       NOTIFY powerContactChanged)
+    Q_PROPERTY(int deviceCount        READ deviceCount        WRITE setDeviceCount        NOTIFY deviceCountChanged)
+    Q_PROPERTY(int selectionContact   READ selectionContact   WRITE setSelectionContact   NOTIFY selectionContactChanged)
+    Q_PROPERTY(int activationContact  READ activationContact  WRITE setActivationContact  NOTIFY activationContactChanged)
     Q_PROPERTY(CameraConfiguration* camera1 READ camera1 CONSTANT)
     Q_PROPERTY(CameraConfiguration* camera2 READ camera2 CONSTANT)
     Q_PROPERTY(QmlObjectListModel* servoButtons READ servoButtons CONSTANT)
@@ -69,6 +74,21 @@ public:
     Q_INVOKABLE QVariantList mainControlsPresetList() const;
     Q_INVOKABLE bool isMainControlsPreset(int channel, int pulseWidth) const;
 
+    bool remoteDeviceControlEnabled() const { return _remoteDeviceControlEnabled; }
+    void setRemoteDeviceControlEnabled(bool enabled);
+
+    int powerContact() const { return _powerContact; }
+    void setPowerContact(int channel);
+
+    int deviceCount() const { return _deviceCount; }
+    void setDeviceCount(int count);
+
+    int selectionContact() const { return _selectionContact; }
+    void setSelectionContact(int channel);
+
+    int activationContact() const { return _activationContact; }
+    void setActivationContact(int channel);
+
     CameraConfiguration* camera1() const { return _camera1; }
     CameraConfiguration* camera2() const { return _camera2; }
     QmlObjectListModel* servoButtons() const { return _servoButtons; }
@@ -97,6 +117,11 @@ signals:
     void autoConnectChanged();
     void camerasCountChanged();
     void mainControlsEnabledChanged();
+    void remoteDeviceControlEnabledChanged();
+    void powerContactChanged();
+    void deviceCountChanged();
+    void selectionContactChanged();
+    void activationContactChanged();
 
 private:
     QString _name;
@@ -105,6 +130,11 @@ private:
     bool _autoConnect = false;
     int _camerasCount = 1;
     bool _mainControlsEnabled = false;
+    bool _remoteDeviceControlEnabled = false;
+    int _powerContact = 10;
+    int _deviceCount = 6;
+    int _selectionContact = 5;
+    int _activationContact = 6;
     CameraConfiguration *_camera1 = nullptr;
     CameraConfiguration *_camera2 = nullptr;
     QmlObjectListModel *_servoButtons = nullptr;

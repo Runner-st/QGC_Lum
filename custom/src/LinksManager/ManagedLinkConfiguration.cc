@@ -124,6 +124,50 @@ bool ManagedLinkConfiguration::isMainControlsPreset(int channel, int pulseWidth)
     return false;
 }
 
+void ManagedLinkConfiguration::setRemoteDeviceControlEnabled(bool enabled)
+{
+    if (_remoteDeviceControlEnabled != enabled) {
+        _remoteDeviceControlEnabled = enabled;
+        emit remoteDeviceControlEnabledChanged();
+    }
+}
+
+void ManagedLinkConfiguration::setPowerContact(int channel)
+{
+    channel = qBound(1, channel, 18);
+    if (_powerContact != channel) {
+        _powerContact = channel;
+        emit powerContactChanged();
+    }
+}
+
+void ManagedLinkConfiguration::setDeviceCount(int count)
+{
+    count = qBound(1, count, 32);
+    if (_deviceCount != count) {
+        _deviceCount = count;
+        emit deviceCountChanged();
+    }
+}
+
+void ManagedLinkConfiguration::setSelectionContact(int channel)
+{
+    channel = qBound(1, channel, 18);
+    if (_selectionContact != channel) {
+        _selectionContact = channel;
+        emit selectionContactChanged();
+    }
+}
+
+void ManagedLinkConfiguration::setActivationContact(int channel)
+{
+    channel = qBound(1, channel, 18);
+    if (_activationContact != channel) {
+        _activationContact = channel;
+        emit activationContactChanged();
+    }
+}
+
 QStringList ManagedLinkConfiguration::getAllStreamUrls() const
 {
     QStringList urls;
@@ -226,6 +270,11 @@ void ManagedLinkConfiguration::copyFrom(const ManagedLinkConfiguration *source)
     setAutoConnect(source->isAutoConnect());
     setCamerasCount(source->camerasCount());
     setMainControlsEnabled(source->mainControlsEnabled());
+    setRemoteDeviceControlEnabled(source->remoteDeviceControlEnabled());
+    setPowerContact(source->powerContact());
+    setDeviceCount(source->deviceCount());
+    setSelectionContact(source->selectionContact());
+    setActivationContact(source->activationContact());
     _camera1->copyFrom(source->camera1());
     _camera2->copyFrom(source->camera2());
 
@@ -281,6 +330,11 @@ void ManagedLinkConfiguration::loadSettings(QSettings &settings, const QString &
     _autoConnect = settings.value("autoConnect", false).toBool();
     _camerasCount = qBound(1, settings.value("camerasCount", 1).toInt(), 2);
     _mainControlsEnabled = settings.value("mainControlsEnabled", false).toBool();
+    _remoteDeviceControlEnabled = settings.value("remoteDeviceControlEnabled", false).toBool();
+    _powerContact = qBound(1, settings.value("powerContact", 10).toInt(), 18);
+    _deviceCount = qBound(1, settings.value("deviceCount", 6).toInt(), 32);
+    _selectionContact = qBound(1, settings.value("selectionContact", 5).toInt(), 18);
+    _activationContact = qBound(1, settings.value("activationContact", 6).toInt(), 18);
     QString servoJson = settings.value("servoButtons", QString()).toString();
     settings.endGroup();
 
@@ -322,6 +376,11 @@ void ManagedLinkConfiguration::saveSettings(QSettings &settings, const QString &
     settings.setValue("autoConnect", _autoConnect);
     settings.setValue("camerasCount", _camerasCount);
     settings.setValue("mainControlsEnabled", _mainControlsEnabled);
+    settings.setValue("remoteDeviceControlEnabled", _remoteDeviceControlEnabled);
+    settings.setValue("powerContact", _powerContact);
+    settings.setValue("deviceCount", _deviceCount);
+    settings.setValue("selectionContact", _selectionContact);
+    settings.setValue("activationContact", _activationContact);
     settings.setValue("servoButtons", QString::fromUtf8(QJsonDocument(servoArray).toJson(QJsonDocument::Compact)));
     settings.endGroup();
 
@@ -338,6 +397,11 @@ QJsonObject ManagedLinkConfiguration::toJson() const
     json["autoConnect"] = _autoConnect;
     json["camerasCount"] = _camerasCount;
     json["mainControlsEnabled"] = _mainControlsEnabled;
+    json["remoteDeviceControlEnabled"] = _remoteDeviceControlEnabled;
+    json["powerContact"] = _powerContact;
+    json["deviceCount"] = _deviceCount;
+    json["selectionContact"] = _selectionContact;
+    json["activationContact"] = _activationContact;
 
     QJsonArray camerasArray;
     camerasArray.append(_camera1->toJson());
@@ -365,6 +429,11 @@ void ManagedLinkConfiguration::fromJson(const QJsonObject &json)
     setAutoConnect(json["autoConnect"].toBool());
     setCamerasCount(json.contains("camerasCount") ? json["camerasCount"].toInt(1) : 1);
     setMainControlsEnabled(json["mainControlsEnabled"].toBool(false));
+    setRemoteDeviceControlEnabled(json["remoteDeviceControlEnabled"].toBool(false));
+    setPowerContact(json.contains("powerContact") ? json["powerContact"].toInt(10) : 10);
+    setDeviceCount(json.contains("deviceCount") ? json["deviceCount"].toInt(6) : 6);
+    setSelectionContact(json.contains("selectionContact") ? json["selectionContact"].toInt(5) : 5);
+    setActivationContact(json.contains("activationContact") ? json["activationContact"].toInt(6) : 6);
 
     QJsonArray camerasArray = json["cameras"].toArray();
     if (camerasArray.size() > 0) {

@@ -17,6 +17,8 @@ import QGroundControl.Controls
 Item {
     id: root
 
+    QGCPalette { id: qgcPal; colorGroupEnabled: true }
+
     property var parentToolInsets
     property var totalToolInsets: toolInsets
     property var mapControl
@@ -40,6 +42,13 @@ Item {
     readonly property bool _hasActiveLink: _linksManager !== null && _linksManager.hasActiveLink
     readonly property bool _hasC12Camera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 2
     readonly property bool _hasTopotekCamera: _hasActiveLink && _linksManager.activeLink && _linksManager.activeLink.camera1 && _linksManager.activeLink.camera1.cameraType === 3
+
+    readonly property var _rdc: _hasActiveLink && _linksManager ? _linksManager.activeRemoteDeviceControl : null
+    readonly property bool _rdcActive: _rdc && _rdc.enabled === true
+    readonly property int _rdcN: _rdc ? (_rdc.deviceCount | 0) : 0
+    readonly property int _rdcPower:  _rdc ? (_rdc.powerContact      | 0) : 0
+    readonly property int _rdcSelect: _rdc ? (_rdc.selectionContact  | 0) : 0
+    readonly property int _rdcAct:    _rdc ? (_rdc.activationContact | 0) : 0
 
     // Debug logging function
     function debugWidgetState() {
@@ -107,7 +116,7 @@ Item {
         anchors.rightMargin: _margin
         anchors.bottomMargin: _margin
         spacing: _margin / 2
-        visible: _hasActiveLink && (userButtonRepeater.count > 0 || presetButtonRepeater.count > 0)
+        visible: _hasActiveLink && (userButtonRepeater.count > 0 || presetButtonRepeater.count > 0 || _rdcActive)
 
         readonly property var _activeButtons: _hasActiveLink ? _linksManager.activeServoButtons : []
         readonly property var _userButtons: _activeButtons.filter(function(b) { return !b.isPreset })
@@ -137,7 +146,7 @@ Item {
             id: presetButtonsFlow
             width: parent.width
             spacing: _margin / 2
-            visible: presetButtonRepeater.count > 0
+            visible: presetButtonRepeater.count > 0 || _rdcActive
 
             Repeater {
                 id: presetButtonRepeater
@@ -150,6 +159,80 @@ Item {
                     enabled: _hasVehicle && _hasCorePlugin
                     onClicked: _triggerServo(modelData.channel, modelData.pulse)
                 }
+            }
+
+            Rectangle {
+                visible: _rdcActive && presetButtonRepeater.count > 0
+                width: 1
+                height: ScreenTools.defaultFontPixelHeight * 2
+                color: qgcPal.groupBorder
+            }
+
+            QGCButton {
+                visible: _rdcActive
+                text: qsTr("TX ON")
+                width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _hasVehicle && _hasCorePlugin
+                onClicked: _triggerServo(_rdcPower, 2000)
+            }
+
+            QGCButton {
+                visible: _rdcActive
+                text: qsTr("TX OFF")
+                width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _hasVehicle && _hasCorePlugin
+                onClicked: _triggerServo(_rdcPower, 1000)
+            }
+
+            QGCComboBox {
+                id: deviceCombo
+                visible: _rdcActive
+                width: ScreenTools.defaultFontPixelWidth * 12
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _hasVehicle && _hasCorePlugin
+
+                readonly property var _options: {
+                    var opts = [qsTr("\u041D\u0435 \u043E\u0431\u0440\u0430\u043D\u043E")]
+                    for (var i = 1; i <= _rdcN; i++) opts.push(String(i))
+                    return opts
+                }
+                model: _options
+
+                on_OptionsChanged: currentIndex = 0
+
+                onActivated: {
+                    var pulse
+                    if (currentIndex <= 0) {
+                        pulse = 0
+                    } else if (_rdcN > 1) {
+                        pulse = Math.round(1000 + (currentIndex - 1) * 1000 / (_rdcN - 1))
+                    } else {
+                        pulse = 1500
+                    }
+                    _triggerServo(_rdcSelect, pulse)
+                    // Reset activation channel so Init/Activate state doesn't leak across device switches.
+                    _triggerServo(_rdcAct, 0)
+                }
+            }
+
+            QGCButton {
+                visible: _rdcActive
+                text: qsTr("Init")
+                width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _hasVehicle && _hasCorePlugin
+                onClicked: _triggerServo(_rdcAct, 1500)
+            }
+
+            QGCButton {
+                visible: _rdcActive
+                text: qsTr("Activate")
+                width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _hasVehicle && _hasCorePlugin
+                onClicked: _triggerServo(_rdcAct, 2000)
             }
         }
     }

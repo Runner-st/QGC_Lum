@@ -36,6 +36,46 @@ Rectangle {
     property bool _showMainControlsConflict: false
     property string _manualAddError: ""
 
+    readonly property bool remoteControlFieldsValid:
+        !remoteControlCheck.checked ||
+        (powerField.acceptableInput &&
+         deviceCountField.acceptableInput &&
+         selectionField.acceptableInput &&
+         activationField.acceptableInput &&
+         !_rdcConflict)
+
+    // True when RDC is enabled and at least one user-added servo button collides
+    // with an RDC-generated (channel, pulse) pair.
+    readonly property bool _rdcConflict: {
+        if (!linkConfig || !linkConfig.remoteDeviceControlEnabled || !linkConfig.servoButtons) return false
+        var list = linkConfig.servoButtons
+        for (var i = 0; i < list.count; i++) {
+            var b = list.get(i)
+            if (b && _rdcReservedPair(b.channel, b.pulseWidth)) return true
+        }
+        return false
+    }
+
+    function _rdcReservedPair(channel, pulse) {
+        if (!linkConfig || !linkConfig.remoteDeviceControlEnabled) return false
+        var pc = linkConfig.powerContact
+        var sc = linkConfig.selectionContact
+        var ac = linkConfig.activationContact
+        var N  = linkConfig.deviceCount
+        if (channel === pc && (pulse === 1000 || pulse === 2000)) return true
+        if (channel === ac && (pulse === 1500 || pulse === 2000)) return true
+        if (channel === sc) {
+            if (pulse === 0) return true
+            if (N === 1 && pulse === 1500) return true
+            if (N > 1) {
+                for (var j = 1; j <= N; j++) {
+                    if (pulse === Math.round(1000 + (j - 1) * 1000 / (N - 1))) return true
+                }
+            }
+        }
+        return false
+    }
+
     function _conflictIndices() {
         var out = []
         if (!linkConfig || !linkConfig.servoButtons) return out
@@ -120,6 +160,14 @@ Rectangle {
         QGCLabel {
             text: heading
             font.bold: true
+        }
+
+        QGCLabel {
+            Layout.fillWidth: true
+            visible: _rdcConflict
+            color: "red"
+            wrapMode: Text.WordWrap
+            text: qsTr("One or more servo buttons conflict with the Remote device control channels (highlighted below). Remove or edit them to save the link.")
         }
 
         // Add/Edit form
@@ -240,6 +288,107 @@ Rectangle {
             text: qsTr("Cannot enable Main controls: one or more of your servo buttons uses the same channel and pulse as a preset (highlighted below). Remove or edit them first.")
         }
 
+        // Remote device control: virtual preset group rendered in the Fly view
+        // when enabled. Channel/count values are persisted per-link.
+        QGCCheckBox {
+            id: remoteControlCheck
+            text: qsTr("Remote device control")
+            checked: linkConfig ? linkConfig.remoteDeviceControlEnabled : false
+            onClicked: {
+                var wantedOn = checked
+                checked = Qt.binding(function() { return linkConfig ? linkConfig.remoteDeviceControlEnabled : false })
+                if (!linkConfig) return
+                // Reset to defaults on every enable transition so stale values
+                // from a previous disable don't persist visually.
+                if (wantedOn && !linkConfig.remoteDeviceControlEnabled) {
+                    linkConfig.powerContact      = 10
+                    linkConfig.deviceCount       = 6
+                    linkConfig.selectionContact  = 5
+                    linkConfig.activationContact = 6
+                    powerField.text       = Qt.binding(function() { return linkConfig ? linkConfig.powerContact.toString()      : "10" })
+                    deviceCountField.text = Qt.binding(function() { return linkConfig ? linkConfig.deviceCount.toString()       : "6"  })
+                    selectionField.text   = Qt.binding(function() { return linkConfig ? linkConfig.selectionContact.toString()  : "5"  })
+                    activationField.text  = Qt.binding(function() { return linkConfig ? linkConfig.activationContact.toString() : "6"  })
+                }
+                linkConfig.remoteDeviceControlEnabled = wantedOn
+            }
+        }
+
+        ColumnLayout {
+            visible: remoteControlCheck.checked
+            Layout.fillWidth: true
+            Layout.leftMargin: ScreenTools.defaultFontPixelWidth * 2
+            spacing: ScreenTools.defaultFontPixelHeight / 4
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+                QGCLabel {
+                    text: qsTr("\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0436\u0438\u0432\u043B\u0435\u043D\u043D\u044F:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 22
+                }
+                QGCTextField {
+                    id: powerField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 10
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 18 }
+                    text: linkConfig ? linkConfig.powerContact.toString() : "10"
+                    onEditingFinished: if (linkConfig && acceptableInput) linkConfig.powerContact = parseInt(text, 10)
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+                QGCLabel {
+                    text: qsTr("\u041A\u0456\u043B\u044C\u043A\u0456\u0441\u0442\u044C \u043F\u0440\u0438\u0441\u0442\u0440\u043E\u0457\u0432:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 22
+                }
+                QGCTextField {
+                    id: deviceCountField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 10
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 32 }
+                    text: linkConfig ? linkConfig.deviceCount.toString() : "6"
+                    onEditingFinished: if (linkConfig && acceptableInput) linkConfig.deviceCount = parseInt(text, 10)
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+                QGCLabel {
+                    text: qsTr("\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0432\u0438\u0431\u043E\u0440\u0443:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 22
+                }
+                QGCTextField {
+                    id: selectionField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 10
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 18 }
+                    text: linkConfig ? linkConfig.selectionContact.toString() : "5"
+                    onEditingFinished: if (linkConfig && acceptableInput) linkConfig.selectionContact = parseInt(text, 10)
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: ScreenTools.defaultFontPixelWidth
+                QGCLabel {
+                    text: qsTr("\u041A\u043E\u043D\u0442\u0430\u043A\u0442 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0456\u0457:")
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 22
+                }
+                QGCTextField {
+                    id: activationField
+                    Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 10
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    validator: IntValidator { bottom: 1; top: 18 }
+                    text: linkConfig ? linkConfig.activationContact.toString() : "6"
+                    onEditingFinished: if (linkConfig && acceptableInput) linkConfig.activationContact = parseInt(text, 10)
+                }
+            }
+        }
+
         // Separator
         Rectangle {
             Layout.fillWidth: true
@@ -267,8 +416,9 @@ Rectangle {
                 spacing: ScreenTools.defaultFontPixelWidth
 
                 readonly property bool _rowConflict: linkConfig &&
-                                                      (mainControlsCheck.checked || _showMainControlsConflict) &&
-                                                      linkConfig.isMainControlsPreset(object.channel, object.pulseWidth)
+                                                      (((mainControlsCheck.checked || _showMainControlsConflict) &&
+                                                        linkConfig.isMainControlsPreset(object.channel, object.pulseWidth)) ||
+                                                       _rdcReservedPair(object.channel, object.pulseWidth))
 
                 QGCLabel {
                     Layout.fillWidth: true

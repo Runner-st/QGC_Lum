@@ -487,6 +487,21 @@ void LinksManagerController::_updateActiveServoButtons()
     }
 
     emit activeServoButtonsChanged();
+
+    QVariantMap rdc;
+    if (_activeLink && _activeLink->remoteDeviceControlEnabled()) {
+        rdc["enabled"]           = true;
+        rdc["powerContact"]      = _activeLink->powerContact();
+        rdc["deviceCount"]       = _activeLink->deviceCount();
+        rdc["selectionContact"]  = _activeLink->selectionContact();
+        rdc["activationContact"] = _activeLink->activationContact();
+    } else {
+        rdc["enabled"] = false;
+    }
+    if (rdc != _activeRemoteDeviceControl) {
+        _activeRemoteDeviceControl = rdc;
+        emit activeRemoteDeviceControlChanged();
+    }
 }
 
 QString LinksManagerController::_commLinkName(const QString &managedLinkName) const

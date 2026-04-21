@@ -36,6 +36,7 @@ class LinksManagerController : public QObject
 
     // Servo buttons for active link
     Q_PROPERTY(QVariantList activeServoButtons READ activeServoButtons NOTIFY activeServoButtonsChanged)
+    Q_PROPERTY(QVariantMap activeRemoteDeviceControl READ activeRemoteDeviceControl NOTIFY activeRemoteDeviceControlChanged)
 
 public:
     explicit LinksManagerController(QObject *parent = nullptr);
@@ -50,6 +51,7 @@ public:
     QStringList activeStreamUrls() const { return _activeStreamUrls; }
     QStringList activeCameraTypes() const { return _activeCameraTypes; }
     QVariantList activeServoButtons() const { return _activeServoButtons; }
+    QVariantMap activeRemoteDeviceControl() const { return _activeRemoteDeviceControl; }
 
     int mainStreamIndex() const { return _mainStreamIndex; }
     Q_INVOKABLE void setMainStreamIndex(int index);
@@ -81,6 +83,7 @@ signals:
     void activeLinkChanged();
     void activeStreamsChanged();
     void activeServoButtonsChanged();
+    void activeRemoteDeviceControlChanged();
     void mainStreamIndexChanged();
     void videoStartPendingChanged();
     void videoStartReady();
@@ -118,6 +121,7 @@ private:
     QStringList _activeStreamUrls;
     QStringList _activeCameraTypes;
     QVariantList _activeServoButtons;
+    QVariantMap _activeRemoteDeviceControl;
     int _mainStreamIndex = 0;
 
     // Pending video start state (delays video until FC parameters ready)
