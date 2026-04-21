@@ -202,6 +202,8 @@ Item {
 
                 on_OptionsChanged: currentIndex = 0
 
+                property int _pendingSelectionPulse: 0
+
                 onActivated: {
                     var pulse
                     if (currentIndex <= 0) {
@@ -211,9 +213,20 @@ Item {
                     } else {
                         pulse = 1500
                     }
-                    _triggerServo(_rdcSelect, pulse)
-                    // Reset activation channel so Init/Activate state doesn't leak across device switches.
+                    // Reset activation channel first so Init/Activate state doesn't
+                    // leak across device switches, then send the selection pulse
+                    // after a delay (the Vehicle command queue drops a second
+                    // MAV_CMD_DO_SET_SERVO while the first ACK is still pending).
+                    _pendingSelectionPulse = pulse
                     _triggerServo(_rdcAct, 0)
+                    selectionSendTimer.restart()
+                }
+
+                Timer {
+                    id: selectionSendTimer
+                    interval: 500
+                    repeat: false
+                    onTriggered: _triggerServo(_rdcSelect, deviceCombo._pendingSelectionPulse)
                 }
             }
 
