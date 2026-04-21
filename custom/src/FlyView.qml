@@ -117,7 +117,7 @@ Item {
             anchors.left:           parent.left
             anchors.bottom:         parent.bottom
             anchors.margins:        _toolsMargin
-            anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3  // Increased bottom gap for PIP
+            anchors.bottomMargin:   ScreenTools.defaultFontPixelHeight * 3 + customOverlay.servoButtonsHeight  // Increased bottom gap for PIP + clear servo buttons
 
             // Use saved user preference for which view is main
             item1IsFullSettingsKey: "MainFlyWindowIsMap"

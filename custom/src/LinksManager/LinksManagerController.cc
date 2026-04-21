@@ -469,8 +469,20 @@ void LinksManagerController::_updateActiveServoButtons()
                 map["name"] = btn->name();
                 map["channel"] = btn->channel();
                 map["pulse"] = btn->pulseWidth();
+                map["isPreset"] = false;
                 _activeServoButtons.append(map);
             }
+        }
+    }
+
+    if (_activeLink && _activeLink->mainControlsEnabled()) {
+        for (const auto &p : ManagedLinkConfiguration::mainControlsPresets()) {
+            QVariantMap map;
+            map["name"] = QString::fromUtf8(p.name);
+            map["channel"] = p.channel;
+            map["pulse"] = p.pulseWidth;
+            map["isPreset"] = true;
+            _activeServoButtons.append(map);
         }
     }
 

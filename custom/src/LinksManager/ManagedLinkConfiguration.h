@@ -13,6 +13,8 @@
 #include <QtCore/QString>
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
+#include <QtCore/QVariantList>
+#include <QtCore/QVector>
 
 #include "CameraConfiguration.h"
 #include "QmlControls/QmlObjectListModel.h"
@@ -28,6 +30,7 @@ class ManagedLinkConfiguration : public QObject
     Q_PROPERTY(quint16 serverPort READ serverPort WRITE setServerPort NOTIFY serverPortChanged)
     Q_PROPERTY(bool autoConnect READ isAutoConnect WRITE setAutoConnect NOTIFY autoConnectChanged)
     Q_PROPERTY(int camerasCount READ camerasCount WRITE setCamerasCount NOTIFY camerasCountChanged)
+    Q_PROPERTY(bool mainControlsEnabled READ mainControlsEnabled WRITE setMainControlsEnabled NOTIFY mainControlsEnabledChanged)
     Q_PROPERTY(CameraConfiguration* camera1 READ camera1 CONSTANT)
     Q_PROPERTY(CameraConfiguration* camera2 READ camera2 CONSTANT)
     Q_PROPERTY(QmlObjectListModel* servoButtons READ servoButtons CONSTANT)
@@ -52,6 +55,19 @@ public:
 
     int camerasCount() const { return _camerasCount; }
     void setCamerasCount(int count);
+
+    bool mainControlsEnabled() const { return _mainControlsEnabled; }
+    void setMainControlsEnabled(bool enabled);
+
+    struct MainControlPreset {
+        const char* name;
+        int channel;
+        int pulseWidth;
+    };
+    static const QVector<MainControlPreset>& mainControlsPresets();
+
+    Q_INVOKABLE QVariantList mainControlsPresetList() const;
+    Q_INVOKABLE bool isMainControlsPreset(int channel, int pulseWidth) const;
 
     CameraConfiguration* camera1() const { return _camera1; }
     CameraConfiguration* camera2() const { return _camera2; }
@@ -80,6 +96,7 @@ signals:
     void serverPortChanged();
     void autoConnectChanged();
     void camerasCountChanged();
+    void mainControlsEnabledChanged();
 
 private:
     QString _name;
@@ -87,6 +104,7 @@ private:
     quint16 _serverPort = DEFAULT_UDP_PORT;
     bool _autoConnect = false;
     int _camerasCount = 1;
+    bool _mainControlsEnabled = false;
     CameraConfiguration *_camera1 = nullptr;
     CameraConfiguration *_camera2 = nullptr;
     QmlObjectListModel *_servoButtons = nullptr;

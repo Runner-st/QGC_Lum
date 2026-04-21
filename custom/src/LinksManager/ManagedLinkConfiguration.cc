@@ -83,6 +83,47 @@ void ManagedLinkConfiguration::setCamerasCount(int count)
     }
 }
 
+void ManagedLinkConfiguration::setMainControlsEnabled(bool enabled)
+{
+    if (_mainControlsEnabled != enabled) {
+        _mainControlsEnabled = enabled;
+        emit mainControlsEnabledChanged();
+    }
+}
+
+const QVector<ManagedLinkConfiguration::MainControlPreset>& ManagedLinkConfiguration::mainControlsPresets()
+{
+    static const QVector<MainControlPreset> presets = {
+        { "\xD0\xA0\xD0\xBE\xD0\xB7\xD0\xBA\xD0\xBB\xD0\xB0\xD1\x81\xD1\x82\xD0\xB8", 8,  1000 }, // Розкласти
+        { "Cam ON",                                                                   9,  2000 },
+        { "Cam OFF",                                                                  9,  1000 },
+        { "\xD0\xA0\xD1\x83\xD1\x87\xD0\xBD\xD0\xB8\xD0\xB9",                         12, 2000 }, // Ручний
+        { "\xD0\x92\xD1\x96\xD0\xB4\xD0\xBC\xD1\x96\xD0\xBD\xD0\xB0",                 12, 1000 }  // Відміна
+    };
+    return presets;
+}
+
+QVariantList ManagedLinkConfiguration::mainControlsPresetList() const
+{
+    QVariantList out;
+    for (const MainControlPreset &p : mainControlsPresets()) {
+        QVariantMap m;
+        m["name"] = QString::fromUtf8(p.name);
+        m["channel"] = p.channel;
+        m["pulseWidth"] = p.pulseWidth;
+        out.append(m);
+    }
+    return out;
+}
+
+bool ManagedLinkConfiguration::isMainControlsPreset(int channel, int pulseWidth) const
+{
+    for (const MainControlPreset &p : mainControlsPresets()) {
+        if (p.channel == channel && p.pulseWidth == pulseWidth) return true;
+    }
+    return false;
+}
+
 QStringList ManagedLinkConfiguration::getAllStreamUrls() const
 {
     QStringList urls;
@@ -184,6 +225,7 @@ void ManagedLinkConfiguration::copyFrom(const ManagedLinkConfiguration *source)
     setServerPort(source->serverPort());
     setAutoConnect(source->isAutoConnect());
     setCamerasCount(source->camerasCount());
+    setMainControlsEnabled(source->mainControlsEnabled());
     _camera1->copyFrom(source->camera1());
     _camera2->copyFrom(source->camera2());
 
@@ -238,6 +280,7 @@ void ManagedLinkConfiguration::loadSettings(QSettings &settings, const QString &
     _serverPort = static_cast<quint16>(settings.value("serverPort", DEFAULT_UDP_PORT).toUInt());
     _autoConnect = settings.value("autoConnect", false).toBool();
     _camerasCount = qBound(1, settings.value("camerasCount", 1).toInt(), 2);
+    _mainControlsEnabled = settings.value("mainControlsEnabled", false).toBool();
     QString servoJson = settings.value("servoButtons", QString()).toString();
     settings.endGroup();
 
@@ -278,6 +321,7 @@ void ManagedLinkConfiguration::saveSettings(QSettings &settings, const QString &
     settings.setValue("serverPort", _serverPort);
     settings.setValue("autoConnect", _autoConnect);
     settings.setValue("camerasCount", _camerasCount);
+    settings.setValue("mainControlsEnabled", _mainControlsEnabled);
     settings.setValue("servoButtons", QString::fromUtf8(QJsonDocument(servoArray).toJson(QJsonDocument::Compact)));
     settings.endGroup();
 
@@ -293,6 +337,7 @@ QJsonObject ManagedLinkConfiguration::toJson() const
     json["serverPort"] = static_cast<int>(_serverPort);
     json["autoConnect"] = _autoConnect;
     json["camerasCount"] = _camerasCount;
+    json["mainControlsEnabled"] = _mainControlsEnabled;
 
     QJsonArray camerasArray;
     camerasArray.append(_camera1->toJson());
@@ -319,6 +364,7 @@ void ManagedLinkConfiguration::fromJson(const QJsonObject &json)
     setServerPort(static_cast<quint16>(json["serverPort"].toInt(DEFAULT_UDP_PORT)));
     setAutoConnect(json["autoConnect"].toBool());
     setCamerasCount(json.contains("camerasCount") ? json["camerasCount"].toInt(1) : 1);
+    setMainControlsEnabled(json["mainControlsEnabled"].toBool(false));
 
     QJsonArray camerasArray = json["cameras"].toArray();
     if (camerasArray.size() > 0) {

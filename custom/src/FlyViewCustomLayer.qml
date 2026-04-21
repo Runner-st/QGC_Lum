@@ -21,6 +21,12 @@ Item {
     property var totalToolInsets: toolInsets
     property var mapControl
 
+    // Height (including outer margin) occupied by the servo button stack at
+    // the bottom-left, for FlyView.qml to push the PIP column up accordingly.
+    readonly property real servoButtonsHeight: servoButtonsColumn.visible
+                                                 ? servoButtonsColumn.implicitHeight + _margin
+                                                 : 0
+
     Component.onCompleted: {
         console.log("FlyViewCustomLayer loaded")
         console.log("_hasCorePlugin:", _hasCorePlugin)
@@ -82,13 +88,18 @@ Item {
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
         topEdgeRightInset: parentToolInsets.topEdgeRightInset
-        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, buttonFlow.visible ? buttonFlow.implicitHeight + (_margin * 2) : 0)
+        bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, servoButtonsColumn.visible ? servoButtonsColumn.implicitHeight + (_margin * 2) : 0)
         bottomEdgeCenterInset: parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset: parentToolInsets.bottomEdgeRightInset
     }
 
-    Flow {
-        id: buttonFlow
+    // Servo buttons: two rows at the bottom-left.
+    //   - Bottom row: preset ("Main controls") buttons.
+    //   - Row above: user-added buttons.
+    // Left margin respects parentToolInsets.leftEdgeBottomInset so the columns
+    // sit to the right of the PIP stack when it's visible.
+    Column {
+        id: servoButtonsColumn
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
@@ -96,18 +107,49 @@ Item {
         anchors.rightMargin: _margin
         anchors.bottomMargin: _margin
         spacing: _margin / 2
-        visible: _hasActiveLink && buttonRepeater.count > 0
+        visible: _hasActiveLink && (userButtonRepeater.count > 0 || presetButtonRepeater.count > 0)
 
-        Repeater {
-            id: buttonRepeater
-            model: _hasActiveLink ? _linksManager.activeServoButtons : []
+        readonly property var _activeButtons: _hasActiveLink ? _linksManager.activeServoButtons : []
+        readonly property var _userButtons: _activeButtons.filter(function(b) { return !b.isPreset })
+        readonly property var _presetButtons: _activeButtons.filter(function(b) { return b.isPreset })
 
-            QGCButton {
-                text: modelData.name
-                width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
-                height: ScreenTools.defaultFontPixelHeight * 2
-                enabled: _hasVehicle && _hasCorePlugin
-                onClicked: _triggerServo(modelData.channel, modelData.pulse)
+        Flow {
+            id: userButtonsFlow
+            width: parent.width
+            spacing: _margin / 2
+            visible: userButtonRepeater.count > 0
+
+            Repeater {
+                id: userButtonRepeater
+                model: servoButtonsColumn._userButtons
+
+                QGCButton {
+                    text: modelData.name
+                    width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                    height: ScreenTools.defaultFontPixelHeight * 2
+                    enabled: _hasVehicle && _hasCorePlugin
+                    onClicked: _triggerServo(modelData.channel, modelData.pulse)
+                }
+            }
+        }
+
+        Flow {
+            id: presetButtonsFlow
+            width: parent.width
+            spacing: _margin / 2
+            visible: presetButtonRepeater.count > 0
+
+            Repeater {
+                id: presetButtonRepeater
+                model: servoButtonsColumn._presetButtons
+
+                QGCButton {
+                    text: modelData.name
+                    width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
+                    height: ScreenTools.defaultFontPixelHeight * 2
+                    enabled: _hasVehicle && _hasCorePlugin
+                    onClicked: _triggerServo(modelData.channel, modelData.pulse)
+                }
             }
         }
     }

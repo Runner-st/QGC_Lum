@@ -33,11 +33,35 @@ Rectangle {
                                         channelField.acceptableInput &&
                                         pulseField.acceptableInput
 
+    property bool _showMainControlsConflict: false
+    property string _manualAddError: ""
+
+    function _conflictIndices() {
+        var out = []
+        if (!linkConfig || !linkConfig.servoButtons) return out
+        var list = linkConfig.servoButtons
+        for (var i = 0; i < list.count; i++) {
+            var b = list.get(i)
+            if (b && linkConfig.isMainControlsPreset(b.channel, b.pulseWidth)) out.push(i)
+        }
+        return out
+    }
+
+    Connections {
+        target: linkConfig ? linkConfig.servoButtons : null
+        function onCountChanged() {
+            if (_showMainControlsConflict && _conflictIndices().length === 0) {
+                _showMainControlsConflict = false
+            }
+        }
+    }
+
     function _resetForm() {
         _editingIndex = -1
         nameField.text = ""
         channelField.text = ""
         pulseField.text = ""
+        _manualAddError = ""
     }
 
     function _submit() {
@@ -45,6 +69,12 @@ Rectangle {
 
         const channel = parseInt(channelField.text, 10)
         const pulse = parseInt(pulseField.text, 10)
+
+        if (linkConfig.mainControlsEnabled && linkConfig.isMainControlsPreset(channel, pulse)) {
+            _manualAddError = qsTr("CH %1, %2 us is reserved by the Main controls preset.").arg(channel).arg(pulse)
+            return
+        }
+        _manualAddError = ""
 
         if (_editingIndex >= 0) {
             linkConfig.updateServoButton(_editingIndex, nameField.text.trim(), channel, pulse)
@@ -165,6 +195,49 @@ Rectangle {
                     onClicked: _resetForm()
                 }
             }
+
+            QGCLabel {
+                Layout.fillWidth: true
+                visible: _manualAddError.length > 0
+                color: "red"
+                wrapMode: Text.WordWrap
+                text: _manualAddError
+            }
+        }
+
+        // Main controls preset toggle: virtual preset group of 5 buttons that
+        // shows in the main Fly view when enabled (never stored in servoButtons).
+        QGCCheckBox {
+            id: mainControlsCheck
+            text: qsTr("Add main controls")
+            checked: linkConfig ? linkConfig.mainControlsEnabled : false
+            onClicked: {
+                // Qt has already toggled `checked`; capture user intent then re-bind
+                // to the backing property so the visual state always tracks truth.
+                var wantedOn = checked
+                checked = Qt.binding(function() { return linkConfig ? linkConfig.mainControlsEnabled : false })
+                if (!linkConfig) return
+                if (wantedOn) {
+                    if (_conflictIndices().length > 0) {
+                        _showMainControlsConflict = true   // stays off via binding
+                    } else {
+                        linkConfig.mainControlsEnabled = true
+                        _showMainControlsConflict = false
+                    }
+                } else {
+                    linkConfig.mainControlsEnabled = false
+                    _showMainControlsConflict = false
+                    _manualAddError = ""
+                }
+            }
+        }
+
+        QGCLabel {
+            Layout.fillWidth: true
+            visible: _showMainControlsConflict
+            color: "red"
+            wrapMode: Text.WordWrap
+            text: qsTr("Cannot enable Main controls: one or more of your servo buttons uses the same channel and pulse as a preset (highlighted below). Remove or edit them first.")
         }
 
         // Separator
@@ -193,9 +266,14 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: ScreenTools.defaultFontPixelWidth
 
+                readonly property bool _rowConflict: linkConfig &&
+                                                      (mainControlsCheck.checked || _showMainControlsConflict) &&
+                                                      linkConfig.isMainControlsPreset(object.channel, object.pulseWidth)
+
                 QGCLabel {
                     Layout.fillWidth: true
                     text: object.name + qsTr(" - CH %1, %2 us").arg(object.channel).arg(object.pulseWidth)
+                    color: parent._rowConflict ? "red" : qgcPal.text
                     elide: Text.ElideRight
                 }
 
