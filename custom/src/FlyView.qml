@@ -78,6 +78,14 @@ Item {
         toolbar.dropMainStatusIndicatorTool();
     }
 
+    Connections {
+        target: _activeVehicle
+        ignoreUnknownSignals: true
+        function onAcknowledgementMessageReceived(text) {
+            mainWindow.showMessageDialog(qsTr("Flight Controller"), text, Dialog.Ok)
+        }
+    }
+
     QGCToolInsets {
         id:                     _toolInsets
         leftEdgeBottomInset:    _pipView.leftEdgeBottomInset

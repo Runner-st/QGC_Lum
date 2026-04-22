@@ -4272,6 +4272,16 @@ void Vehicle::_textMessageReceived(MAV_COMPONENT componentid, MAV_SEVERITY sever
         return;
     }
 
+    // Lumineer ACK marker: messages prefixed with "#ACK#" are surfaced as a modal popup
+    // requiring acknowledgement. Strip the marker before any other text handling so the
+    // existing "#" read-aloud convention (below) doesn't eat one of its '#' characters.
+    static const QString kAckMarker = QStringLiteral("#ACK#");
+    bool isAckMessage = false;
+    if (text.startsWith(kAckMarker)) {
+        isAckMessage = true;
+        (void) text.remove(0, kAckMarker.length());
+    }
+
     bool skipSpoken = false;
     const bool ardupilotPrearm = text.startsWith(QStringLiteral("PreArm"));
     const bool px4Prearm = text.startsWith(QStringLiteral("preflight"), Qt::CaseInsensitive) && (severity >= MAV_SEVERITY::MAV_SEVERITY_CRITICAL);
@@ -4302,12 +4312,16 @@ void Vehicle::_textMessageReceived(MAV_COMPONENT componentid, MAV_SEVERITY sever
         readAloud = true;
     }
 
-    if (readAloud && !skipSpoken) {
+    if (readAloud && !skipSpoken && !isAckMessage) {
         _say(text);
     }
 
     emit textMessageReceived(id(), componentid, severity, text, description);
     m_statusTextHandler->handleHTMLEscapedTextMessage(componentid, severity, text.toHtmlEscaped(), description);
+
+    if (isAckMessage) {
+        emit acknowledgementMessageReceived(text);
+    }
 }
 
 void Vehicle::_errorMessageReceived(QString message)

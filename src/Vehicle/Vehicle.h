@@ -1409,6 +1409,7 @@ signals:
     void messageCountChanged();
     void formattedMessagesChanged();
     void newFormattedMessage(QString formattedMessage);
+    void acknowledgementMessageReceived(QString text);
 
     // void statusTextHandlerChanged();
 
