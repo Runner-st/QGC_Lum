@@ -217,7 +217,7 @@ QGCPopupDialog {
         QGCLabel {
             Layout.fillWidth: true
             visible: !_formValid
-            text: qsTr("Please fill in Link Name, Server Address, and (if enabled) all Remote device control fields.")
+            text: qsTr("Please fill in Link Name, Server Address, and (if enabled) resolve any Remote device control field errors or conflicts.")
             color: "orange"
             wrapMode: Text.WordWrap
         }

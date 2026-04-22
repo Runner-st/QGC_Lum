@@ -42,7 +42,20 @@ Rectangle {
          deviceCountField.acceptableInput &&
          selectionField.acceptableInput &&
          activationField.acceptableInput &&
-         !_rdcConflict)
+         !_rdcConflict &&
+         !_rdcMainConflict)
+
+    // True when both Main-controls and RDC are enabled AND at least one
+    // Main-controls preset pair collides with an RDC-generated (channel, pulse).
+    readonly property bool _rdcMainConflict: {
+        if (!linkConfig) return false
+        if (!linkConfig.mainControlsEnabled || !linkConfig.remoteDeviceControlEnabled) return false
+        var presets = linkConfig.mainControlsPresetList()
+        for (var i = 0; i < presets.length; i++) {
+            if (_rdcReservedPair(presets[i].channel, presets[i].pulseWidth)) return true
+        }
+        return false
+    }
 
     // True when RDC is enabled and at least one user-added servo button collides
     // with an RDC-generated (channel, pulse) pair.
@@ -168,6 +181,14 @@ Rectangle {
             color: "red"
             wrapMode: Text.WordWrap
             text: qsTr("One or more servo buttons conflict with the Remote device control channels (highlighted below). Remove or edit them to save the link.")
+        }
+
+        QGCLabel {
+            Layout.fillWidth: true
+            visible: _rdcMainConflict
+            color: "red"
+            wrapMode: Text.WordWrap
+            text: qsTr("Remote device control channels/pulses conflict with the Main controls preset (channels 8, 9, 12). Adjust the Remote device control fields or disable one of the two.")
         }
 
         // Add/Edit form
