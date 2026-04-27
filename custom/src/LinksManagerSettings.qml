@@ -47,11 +47,6 @@ SettingsPage {
         _linksManager.activateLink(linkConfig)
     }
 
-    function _testConnection(linkConfig) {
-        if (!_pluginReady || !linkConfig) return
-        _linksManager.testConnection(linkConfig)
-    }
-
     // Edit Dialog Component
     Component {
         id: editDialogComponent
@@ -92,15 +87,9 @@ SettingsPage {
         exportDialog.open()
     }
 
-    // Test Connection Results
+    // Status message updates
     Connections {
         target: _linksManager
-        function onTestConnectionResult(config, success, message) {
-            testResultLabel.text = (success ? "✓ " : "✗ ") + message
-            testResultLabel.color = success ? "green" : "red"
-            testResultLabel.visible = true
-            testResultTimer.restart()
-        }
         function onImportExportResult(success, message) {
             testResultLabel.text = (success ? "✓ " : "✗ ") + message
             testResultLabel.color = success ? "green" : "red"
@@ -221,12 +210,6 @@ SettingsPage {
                             QGCButton {
                                 text: qsTr("Edit")
                                 onClicked: _openEditDialog(object, false)
-                                enabled: _pluginReady
-                            }
-
-                            QGCButton {
-                                text: qsTr("Test")
-                                onClicked: _testConnection(object)
                                 enabled: _pluginReady
                             }
 

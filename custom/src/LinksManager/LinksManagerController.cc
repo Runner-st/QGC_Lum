@@ -207,23 +207,6 @@ void LinksManagerController::deactivateLink()
     emit mainStreamIndexChanged();
 }
 
-void LinksManagerController::testConnection(ManagedLinkConfiguration *config)
-{
-    if (!config) {
-        emit testConnectionResult(config, false, tr("Invalid configuration"));
-        return;
-    }
-
-    if (config->serverAddress().isEmpty()) {
-        emit testConnectionResult(config, false, tr("Server address is empty"));
-        return;
-    }
-
-    // For now, just emit success if the address is valid
-    // TODO: Implement actual UDP ping test
-    emit testConnectionResult(config, true, tr("Configuration looks valid"));
-}
-
 void LinksManagerController::swapMainStream(int pipIndex)
 {
     if (pipIndex < 0 || pipIndex >= _activeStreamUrls.count()) {

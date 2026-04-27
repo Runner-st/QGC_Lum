@@ -68,7 +68,6 @@ public:
     // Connection management
     Q_INVOKABLE void activateLink(ManagedLinkConfiguration *config);
     Q_INVOKABLE void deactivateLink();
-    Q_INVOKABLE void testConnection(ManagedLinkConfiguration *config);
 
     // Video stream management
     Q_INVOKABLE void swapMainStream(int pipIndex);
@@ -88,7 +87,6 @@ signals:
     void videoStartPendingChanged();
     void videoStartReady();
     void linksChanged();
-    void testConnectionResult(ManagedLinkConfiguration *config, bool success, const QString &message);
     void importExportResult(bool success, const QString &message);
 
 private slots:
