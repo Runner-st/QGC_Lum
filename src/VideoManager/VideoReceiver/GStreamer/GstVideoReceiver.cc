@@ -696,7 +696,8 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                 // GenericIPCamera / HerelinkHDMI: Default GStreamer settings
                 g_object_set(source,
                              "location", input.toUtf8().constData(),
-                             "latency", 20,  // Default GStreamer latency
+                             "latency", 100,
+                             "drop-on-latency", TRUE,
                              nullptr);
             }
         } else if (isTcpMPEGTS) {
