@@ -107,10 +107,10 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.minimumWidth: implicitWidth
         heading: qsTr("Managed Links")
-        headingDescription: qsTr("Configure flight controller connections with associated camera streams.")
         contentSpacing: ScreenTools.defaultFontPixelHeight
 
         ColumnLayout {
+            Layout.fillWidth: true
             Layout.minimumWidth: implicitWidth
             spacing: ScreenTools.defaultFontPixelHeight / 2
 
@@ -136,6 +136,7 @@ SettingsPage {
                 model: _pluginReady ? _linksManager.managedLinks : []
 
                 Rectangle {
+                    Layout.fillWidth: true
                     Layout.minimumWidth: linkColumn.implicitWidth + ScreenTools.defaultFontPixelHeight
                     height: linkColumn.height + ScreenTools.defaultFontPixelHeight
                     color: _linksManager && _linksManager.activeLink === object ?
