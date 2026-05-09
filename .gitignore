@@ -96,3 +96,4 @@ CMakeUserPresets.json
 cpm_modules
 .claude
 nul
+*.stackdump

@@ -51,6 +51,16 @@ enum
 
 static guint gst_qgc_video_sink_bin_signals[SIGNAL_LAST] = { 0 };
 
+#ifdef QGC_GST_QT6_D3D11
+// On Windows there is no glsinkbin wrapper — properties that the GL build
+// forwarded to glsinkbin (sync, enable-last-sample, force-aspect-ratio)
+// go straight to the qml6d3d11sink, which inherits the base-sink ones from
+// GstBaseSink and exposes its own force-aspect-ratio.
+#define QGC_SINK_HOST(self) ((self)->qmlglsink)
+#else
+#define QGC_SINK_HOST(self) ((self)->glsinkbin)
+#endif
+
 #define gst_qgc_video_sink_bin_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE(
     GstQgcVideoSinkBin,
@@ -69,7 +79,9 @@ GST_ELEMENT_REGISTER_DEFINE_WITH_CODE(qgcvideosinkbin,"qgcvideosinkbin",
 
 static void gst_qgc_video_sink_bin_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
+#ifndef QGC_GST_QT6_D3D11
 static GstElement *gst_qgc_video_sink_bin_on_glsinkbin_create_element(GstElement *object, gpointer udata);
+#endif
 static void gst_qgc_video_sink_bin_dispose(GObject *object);
 static void gst_qgc_video_sink_bin_finalize(GObject *object);
 
@@ -150,6 +162,23 @@ gst_qgc_video_sink_bin_class_init(GstQgcVideoSinkBinClass *klass)
 static void
 gst_qgc_video_sink_bin_init(GstQgcVideoSinkBin *self)
 {
+#ifdef QGC_GST_QT6_D3D11
+    // Windows: render directly into a D3D11 QtQuick texture. There is no
+    // d3d11sinkbin equivalent of glsinkbin in GStreamer 1.24, but
+    // qml6d3d11sink also accepts plain system memory caps — pipeline
+    // negotiation will insert d3d11upload upstream when needed.
+    self->glsinkbin = NULL;
+
+    self->qmlglsink = gst_element_factory_make("qml6d3d11sink", NULL);
+    if (!self->qmlglsink) {
+        GST_ERROR_OBJECT(self, "gst_element_factory_make('qml6d3d11sink') failed");
+        return;
+    }
+
+    g_return_if_fail(gst_bin_add(GST_BIN(self), self->qmlglsink));
+
+    GstPad *sinkpad = gst_element_get_static_pad(self->qmlglsink, "sink");
+#else
     self->glsinkbin = gst_element_factory_make("glsinkbin", NULL);
     if (!self->glsinkbin) {
         GST_ERROR_OBJECT(self, "gst_element_factory_make('glsinkbin') failed");
@@ -175,6 +204,7 @@ gst_qgc_video_sink_bin_init(GstQgcVideoSinkBin *self)
                     self);
 
     GstPad *sinkpad = gst_element_get_static_pad(self->glsinkbin, "sink");
+#endif
     if (!sinkpad) {
         GST_ERROR_OBJECT(self, "gst_element_get_static_pad('sink') failed");
         return;
@@ -203,7 +233,7 @@ gst_qgc_video_sink_bin_set_property(GObject *object, guint prop_id, const GValue
 
     switch (prop_id) {
     case PROP_ENABLE_LAST_SAMPLE:
-        g_object_set(self->glsinkbin,
+        g_object_set(QGC_SINK_HOST(self),
                      PROP_ENABLE_LAST_SAMPLE_NAME,
                      g_value_get_boolean(value),
                      NULL);
@@ -215,12 +245,16 @@ gst_qgc_video_sink_bin_set_property(GObject *object, guint prop_id, const GValue
                      NULL);
         break;
     case PROP_FORCE_ASPECT_RATIO:
-        g_object_set(self->glsinkbin,
+        g_object_set(QGC_SINK_HOST(self),
                      PROP_FORCE_ASPECT_RATIO_NAME,
                      g_value_get_boolean(value),
                      NULL);
         break;
     case PROP_PIXEL_ASPECT_RATIO: {
+#ifdef QGC_GST_QT6_D3D11
+        // qml6d3d11sink does not expose pixel-aspect-ratio; ignore.
+        (void)value;
+#else
         const gint num = gst_value_get_fraction_numerator(value);
         const gint den = gst_value_get_fraction_denominator(value);
         g_object_set(self->qmlglsink,
@@ -228,10 +262,11 @@ gst_qgc_video_sink_bin_set_property(GObject *object, guint prop_id, const GValue
                      num,
                      den,
                      NULL);
+#endif
         break;
     }
     case PROP_SYNC:
-        g_object_set(self->glsinkbin,
+        g_object_set(QGC_SINK_HOST(self),
                      PROP_SYNC_NAME,
                      g_value_get_boolean(value),
                      NULL);
@@ -250,7 +285,7 @@ gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *valu
     switch (prop_id) {
     case PROP_ENABLE_LAST_SAMPLE: {
         gboolean enable = FALSE;
-        g_object_get(self->glsinkbin,
+        g_object_get(QGC_SINK_HOST(self),
                      PROP_ENABLE_LAST_SAMPLE_NAME,
                      &enable,
                      NULL);
@@ -259,7 +294,7 @@ gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *valu
     }
     case PROP_LAST_SAMPLE: {
         GstSample *sample = NULL;
-        g_object_get(self->glsinkbin,
+        g_object_get(QGC_SINK_HOST(self),
                      PROP_LAST_SAMPLE_NAME,
                      &sample,
                      NULL);
@@ -280,7 +315,7 @@ gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *valu
     }
     case PROP_FORCE_ASPECT_RATIO: {
         gboolean enable = FALSE;
-        g_object_get(self->glsinkbin,
+        g_object_get(QGC_SINK_HOST(self),
                      PROP_FORCE_ASPECT_RATIO_NAME,
                      &enable,
                      NULL);
@@ -288,17 +323,22 @@ gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *valu
         break;
     }
     case PROP_PIXEL_ASPECT_RATIO: {
+#ifdef QGC_GST_QT6_D3D11
+        // qml6d3d11sink does not expose pixel-aspect-ratio; report 1:1.
+        gst_value_set_fraction(value, DEFAULT_PAR_N, DEFAULT_PAR_D);
+#else
         gint num = 0, den = 1;
         g_object_get(self->qmlglsink,
                      PROP_PIXEL_ASPECT_RATIO_NAME,
                      &num, &den,
                      NULL);
         gst_value_set_fraction(value, num, den);
+#endif
         break;
     }
     case PROP_SYNC: {
         gboolean enable = FALSE;
-        g_object_get(self->glsinkbin,
+        g_object_get(QGC_SINK_HOST(self),
                      PROP_SYNC_NAME,
                      &enable,
                      NULL);
@@ -311,6 +351,7 @@ gst_qgc_video_sink_bin_get_property(GObject *object, guint prop_id, GValue *valu
     }
 }
 
+#ifndef QGC_GST_QT6_D3D11
 static GstElement *
 gst_qgc_video_sink_bin_on_glsinkbin_create_element(GstElement *object, gpointer udata)
 {
@@ -326,6 +367,7 @@ gst_qgc_video_sink_bin_on_glsinkbin_create_element(GstElement *object, gpointer 
 
     return qgcVideoSinkBin->qmlglsink;
 }
+#endif // !QGC_GST_QT6_D3D11
 
 static void
 gst_qgc_video_sink_bin_dispose(GObject *object)

@@ -12,11 +12,18 @@ if(QGC_ENABLE_GST_VIDEOSTREAMING)
     endif()
 
     add_subdirectory(gstqml6gl)
-    # TODO: https://gstreamer.freedesktop.org/documentation/qt6d3d11/index.html#qml6d3d11sink-page
+    if(WIN32)
+        add_subdirectory(gstqt6d3d11)
+    endif()
 endif()
 
 if(TARGET gstqml6gl)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE gstqml6gl)
+
+    if(TARGET gstqt6d3d11)
+        target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE gstqt6d3d11)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE QGC_GST_QT6_D3D11)
+    endif()
 
     target_sources(${CMAKE_PROJECT_NAME}
         PRIVATE

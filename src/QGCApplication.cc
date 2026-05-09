@@ -236,8 +236,14 @@ void QGCApplication::init()
 void QGCApplication::_initVideo()
 {
 #ifdef QGC_GST_STREAMING
-    // Gstreamer video playback requires OpenGL
+#ifdef QGC_GST_QT6_D3D11
+    // qml6d3d11sink renders into the QtQuick scene as a D3D11 texture and
+    // requires the scene's RHI backend to be Direct3D11.
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
+#else
+    // qml6glsink requires the QtQuick scene to use OpenGL.
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+#endif
 #endif
 
     QGCCorePlugin::instance();  // CorePlugin must be initialized before VideoManager for Video Cleanup

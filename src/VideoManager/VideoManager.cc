@@ -25,6 +25,9 @@
 #else
 #include "VideoItemStub.h"
 #endif
+#ifdef QGC_GST_QT6_D3D11
+#include "gstqt6d3d11videoitem.h"
+#endif
 #include "QtMultimediaReceiver.h"
 #include "UVCReceiver.h"
 
@@ -58,6 +61,13 @@ VideoManager::VideoManager(QObject *parent)
     if (!GStreamer::initialize()) {
         qCCritical(VideoManagerLog) << "Failed To Initialize GStreamer";
     }
+#ifdef QGC_GST_QT6_D3D11
+    // Existing QML scenes import org.freedesktop.gstreamer.Qt6GLVideoItem
+    // and instantiate GstGLQt6VideoItem. On Windows we render with
+    // qml6d3d11sink, whose widget must be a GstQt6D3D11VideoItem. Register
+    // that class under the GL QML name so QML files don't have to branch.
+    (void) qmlRegisterType<GstQt6D3D11VideoItem>("org.freedesktop.gstreamer.Qt6GLVideoItem", 1, 0, "GstGLQt6VideoItem");
+#endif
 #else
     (void) qmlRegisterType<VideoItemStub>("org.freedesktop.gstreamer.Qt6GLVideoItem", 1, 0, "GstGLQt6VideoItem");
 #endif

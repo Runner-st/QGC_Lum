@@ -57,6 +57,9 @@ GST_PLUGIN_STATIC_DECLARE(vpx);
 GST_PLUGIN_STATIC_DECLARE(vulkan);
 
 GST_PLUGIN_STATIC_DECLARE(qgc);
+#ifdef QGC_GST_QT6_D3D11
+GST_PLUGIN_STATIC_DECLARE(qt6d3d11);
+#endif
 G_END_DECLS
 
 namespace
@@ -125,6 +128,10 @@ void _registerPlugins()
 // #endif
 
     GST_PLUGIN_STATIC_REGISTER(qgc);
+
+#ifdef QGC_GST_QT6_D3D11
+    GST_PLUGIN_STATIC_REGISTER(qt6d3d11);
+#endif
 }
 
 void _qtGstLog(GstDebugCategory *category,
@@ -407,13 +414,27 @@ bool initialize()
 
     _setCodecPriorities(static_cast<GStreamer::VideoDecoderOptions>(SettingsManager::instance()->videoSettings()->forceVideoDecoder()->rawValue().toInt()));
 
-    GstElement *sink = gst_element_factory_make("qml6glsink", nullptr);
-    if (!sink) {
-        qCCritical(GStreamerLog) << "failed to init qml6glsink";
-        return false;
+#ifdef QGC_GST_QT6_D3D11
+    {
+        GstElement *d3d11Sink = gst_element_factory_make("qml6d3d11sink", nullptr);
+        if (!d3d11Sink) {
+            qCCritical(GStreamerLog) << "failed to init qml6d3d11sink";
+            return false;
+        }
+        gst_clear_object(&d3d11Sink);
+        qCDebug(GStreamerLog) << "qml6d3d11sink probe OK";
     }
+#else
+    {
+        GstElement *sink = gst_element_factory_make("qml6glsink", nullptr);
+        if (!sink) {
+            qCCritical(GStreamerLog) << "failed to init qml6glsink";
+            return false;
+        }
+        gst_clear_object(&sink);
+    }
+#endif
 
-    gst_clear_object(&sink);
     return true;
 }
 
