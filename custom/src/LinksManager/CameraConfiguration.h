@@ -39,7 +39,8 @@ public:
         GenericIPCamera = 0,
         HerelinkHDMI,
         SkydroidC12,
-        TopotekKHP290A609
+        TopotekKHP290A609,
+        Kurbas640
     };
     Q_ENUM(CameraType)
 

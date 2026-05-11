@@ -692,6 +692,20 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
                              "buffer-mode", 0,  // None - only use RTP timestamps, no jitterbuffer
                              "timeout", 5000000,  // 5 seconds in microseconds
                              nullptr);
+            } else if (_cameraType == QStringLiteral("Kurbas640")) {
+                // Kurbas640 thermal: mirror the user's CLI flags
+                //   protocols=udp latency=300 drop-on-latency=true buffer-mode=auto
+                // Decoder is forced to avdec_h264 in _makeDecoder() because
+                // hardware H.264 decoders produce vertical-stripe artifacts on
+                // this camera's stream.
+                g_object_set(source,
+                             "location", input.toUtf8().constData(),
+                             "latency", 300,
+                             "drop-on-latency", TRUE,
+                             "protocols", 1,  // GST_RTSP_LOWER_TRANS_UDP
+                             "buffer-mode", 4,  // GST_RTP_JITTER_BUFFER_MODE_AUTO
+                             "timeout", 5000000,
+                             nullptr);
             } else {
                 // GenericIPCamera / HerelinkHDMI: Default GStreamer settings
                 g_object_set(source,
@@ -838,6 +852,51 @@ GstElement *GstVideoReceiver::_makeSource(const QString &input)
 GstElement *GstVideoReceiver::_makeDecoder(GstCaps *caps, GstElement *videoSink)
 {
     Q_UNUSED(caps); Q_UNUSED(videoSink)
+
+    if (_cameraType == QStringLiteral("Kurbas640")) {
+        // Hardware H.264 decoders (d3d11h264dec, dxvah264decoder, nvh264dec, ...)
+        // produce vertical-stripe macroblock artifacts on this camera's stream.
+        // Force software decoding by building an explicit h264parse + avdec_h264
+        // bin instead of relying on decodebin3's autoplug ranking. Keeps the
+        // decoder choice local to this pipeline — other cameras still use
+        // decodebin3 with the user's global VideoSettings preference.
+        GstElement *bin = gst_bin_new("kurbas640-decoder");
+        GstElement *parser = gst_element_factory_make("h264parse", nullptr);
+        GstElement *decoder = gst_element_factory_make("avdec_h264", nullptr);
+
+        if (!bin || !parser || !decoder) {
+            qCCritical(GstVideoReceiverLog) << "Kurbas640 decoder bin: element creation failed";
+            gst_clear_object(&bin);
+            gst_clear_object(&parser);
+            gst_clear_object(&decoder);
+            return nullptr;
+        }
+
+        gst_bin_add_many(GST_BIN(bin), parser, decoder, nullptr);
+
+        if (!gst_element_link(parser, decoder)) {
+            qCCritical(GstVideoReceiverLog) << "Kurbas640 decoder bin: gst_element_link(parser, decoder) failed";
+            gst_object_unref(bin);
+            return nullptr;
+        }
+
+        GstPad *sinkPad = gst_element_get_static_pad(parser, "sink");
+        GstPad *srcPad = gst_element_get_static_pad(decoder, "src");
+        if (!sinkPad || !srcPad) {
+            qCCritical(GstVideoReceiverLog) << "Kurbas640 decoder bin: pad lookup failed";
+            gst_clear_object(&sinkPad);
+            gst_clear_object(&srcPad);
+            gst_object_unref(bin);
+            return nullptr;
+        }
+
+        gst_element_add_pad(bin, gst_ghost_pad_new("sink", sinkPad));
+        gst_element_add_pad(bin, gst_ghost_pad_new("src", srcPad));
+        gst_object_unref(sinkPad);
+        gst_object_unref(srcPad);
+
+        return bin;
+    }
 
     GstElement *decoder = gst_element_factory_make("decodebin3", nullptr);
     if (!decoder) {

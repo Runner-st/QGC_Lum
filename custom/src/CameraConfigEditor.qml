@@ -32,11 +32,16 @@ Rectangle {
         qsTr("Generic IP Camera"),
         qsTr("Herelink HDMI"),
         qsTr("Skydroid C12"),
-        qsTr("Topotek KHP290A609")
+        qsTr("Topotek KHP290A609"),
+        qsTr("Kurbas640 Thermal")
     ]
 
-    // Check if streams should be read-only based on camera type
-    readonly property bool _isPresetCamera: cameraConfig && cameraConfig.cameraType > 0
+    // Check if streams should be read-only based on camera type.
+    // Kurbas640 (4) keeps the URL editable like Generic — only the source-layer
+    // flags and software decoder are camera-specific, the URL is user-entered.
+    readonly property bool _isPresetCamera: cameraConfig
+        && cameraConfig.cameraType > 0
+        && cameraConfig.cameraType !== 4
 
     ColumnLayout {
         id: contentColumn
@@ -358,7 +363,7 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
-            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek
+            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek; Kurbas keeps editable streams
 
             QGCLabel {
                 text: qsTr("Stream 1")
@@ -416,7 +421,7 @@ Rectangle {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: ScreenTools.defaultFontPixelHeight / 4
-            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek
+            visible: cameraConfig && cameraConfig.cameraType !== 2 && cameraConfig.cameraType !== 3  // Hide for C12 and Topotek; Kurbas keeps editable streams
 
             QGCLabel {
                 text: qsTr("Stream 2")

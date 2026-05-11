@@ -344,6 +344,8 @@ QString CameraConfiguration::cameraTypeToString(CameraType type)
         return QStringLiteral("SkydroidC12");
     case TopotekKHP290A609:
         return QStringLiteral("TopotekKHP290A609");
+    case Kurbas640:
+        return QStringLiteral("Kurbas640");
     case GenericIPCamera:
     default:
         return QStringLiteral("GenericIPCamera");
@@ -358,6 +360,8 @@ CameraConfiguration::CameraType CameraConfiguration::stringToCameraType(const QS
         return SkydroidC12;
     } else if (str == QStringLiteral("TopotekKHP290A609")) {
         return TopotekKHP290A609;
+    } else if (str == QStringLiteral("Kurbas640")) {
+        return Kurbas640;
     }
     return GenericIPCamera;
 }
