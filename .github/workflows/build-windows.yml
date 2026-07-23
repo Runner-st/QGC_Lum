@@ -1,0 +1,229 @@
+name: Build Windows (LumiereQGC)
+
+# Ручний запуск для першого тестування + автоматичний на push у main/tags.
+# Підпис через SignPath додамо окремим кроком пізніше.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+
+env:
+  QT_VERSION: "6.8.3"
+  GST_VERSION: "1.24.13"
+  BUILD_TYPE: "Release"
+  # CPM.cmake офіційно читає цю змінну середовища і качає туди залежності
+  # (SDL3, GeographicLib, shapelib, ulog_cpp, ArduPilotParams тощо) замість
+  # build/cpm_modules — це дозволяє кешувати їх окремо від build-директорії,
+  # яка щоразу створюється з нуля.
+  CPM_SOURCE_CACHE: "C:\\cpm-cache"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      # ---------------------------------------------------------------
+      # 1. Checkout з рекурсивними submodules (як у оригінального QGC)
+      # ---------------------------------------------------------------
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      # ---------------------------------------------------------------
+      # 2. Qt 6.8.3 (MSVC) через кешований install-qt-action
+      # ---------------------------------------------------------------
+      - name: Install Qt ${{ env.QT_VERSION }}
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          # Повний список звірено зі скріншотів Qt Maintenance Tool
+          # (Qt 6.8.3 → MSVC 2022 64-bit → Additional Libraries, все, що
+          # позначено галочкою).
+          modules: >-
+            qtactiveqt qt3d qt5compat qtcharts qtconnectivity qtdatavis3d
+            qtgraphs qthttpserver qtimageformats qtlanguageserver qtlocation
+            qtlottie qtmultimedia qtnetworkauth qtpositioning qtgrpc
+            qtquick3d qtquick3dphysics qtquicktimeline qtremoteobjects
+            qtsensors qtserialbus qtserialport qtshadertools qtspeech
+            qtstatemachine qtvirtualkeyboard qtwebchannel qtwebsockets
+            qtwebview
+          cache: true
+
+      # ---------------------------------------------------------------
+      # 3. MSVC toolchain — на windows-latest вже є VS2022,
+      #    просто активуємо потрібне середовище
+      # ---------------------------------------------------------------
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # ---------------------------------------------------------------
+      # 4. GStreamer 1.24.13 MSVC — кешуємо, бо інсталятори важкі (~1GB)
+      # ---------------------------------------------------------------
+      - name: Cache GStreamer installers
+        id: cache-gst
+        uses: actions/cache@v4
+        with:
+          path: C:\gst-installers
+          key: gstreamer-${{ env.GST_VERSION }}-msvc-x86_64
+
+      - name: Download GStreamer installers
+        if: steps.cache-gst.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path C:\gst-installers | Out-Null
+          $base = "https://gstreamer.freedesktop.org/data/pkg/windows/${{ env.GST_VERSION }}/msvc"
+          Invoke-WebRequest -Uri "$base/gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi" -OutFile "C:\gst-installers\gst-runtime.msi"
+          Invoke-WebRequest -Uri "$base/gstreamer-1.0-msvc-x86_64-${{ env.GST_VERSION }}.msi.sha256sum" -OutFile "C:\gst-installers\gst-runtime.msi.sha256sum"
+          Invoke-WebRequest -Uri "$base/gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi" -OutFile "C:\gst-installers\gst-devel.msi"
+          Invoke-WebRequest -Uri "$base/gstreamer-1.0-devel-msvc-x86_64-${{ env.GST_VERSION }}.msi.sha256sum" -OutFile "C:\gst-installers\gst-devel.msi.sha256sum"
+          # ПРИМІТКА: якщо на офіційному дзеркалі версії 1.24.13 немає
+          # (як ти й казав, що вона там не знайшлась), заміни ці рядки
+          # на завантаження з твого власного backup-хостингу (S3/GDrive/
+          # реліз у окремому приватному репо) — головне, щоб URL був стабільний,
+          # і тоді sha256sum-файли треба буде або теж хостити поруч, або
+          # прибрати крок верифікації нижче.
+
+      - name: Verify GStreamer installers (sha256)
+        if: steps.cache-gst.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          function Verify-Sha256 {
+            param([string]$FilePath, [string]$SumFilePath)
+            # Офіційні .sha256sum файли мають формат "<hash>  <filename>"
+            $expected = (Get-Content $SumFilePath -Raw).Trim().Split(' ')[0].Trim()
+            $actual = (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLower()
+            if ($actual -ne $expected.ToLower()) {
+              Write-Error "SHA256 mismatch for $FilePath`nExpected: $expected`nActual:   $actual"
+              exit 1
+            }
+            Write-Host "OK: $FilePath ($actual)"
+          }
+          Verify-Sha256 -FilePath "C:\gst-installers\gst-runtime.msi" -SumFilePath "C:\gst-installers\gst-runtime.msi.sha256sum"
+          Verify-Sha256 -FilePath "C:\gst-installers\gst-devel.msi" -SumFilePath "C:\gst-installers\gst-devel.msi.sha256sum"
+
+      - name: Install GStreamer (runtime + devel)
+        shell: pwsh
+        run: |
+          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-runtime.msi" /quiet /norestart INSTALLDIR="C:\gstreamer\1.0\msvc_x86_64"' -Wait
+          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-devel.msi" /quiet /norestart INSTALLDIR="C:\gstreamer\1.0\msvc_x86_64"' -Wait
+          echo "C:\gstreamer\1.0\msvc_x86_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=C:\gstreamer\1.0\msvc_x86_64\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # ---------------------------------------------------------------
+      # 4.1 pkg-config — ОБОВ'ЯЗКОВО для цього проєкту: в CMakeCache.txt
+      #     видно записи __pkg_config_arguments_PC_GSTREAMER* — тобто
+      #     GStreamer шукається саме через pkg-config (FindPkgConfig),
+      #     а не лише через GSTREAMER_1_0_ROOT_MSVC_X86_64. На
+      #     windows-latest runner pkg-config.exe відсутній за замовчуванням,
+      #     і офіційний GStreamer devel MSI його не приносить — треба
+      #     ставити окремо (pkgconfiglite) і явно вказати PKG_CONFIG_PATH
+      #     на .pc-файли з GStreamer devel-пакета.
+      # ---------------------------------------------------------------
+      - name: Install pkg-config
+        shell: pwsh
+        run: choco install pkgconfiglite -y --no-progress
+
+      - name: Set PKG_CONFIG_PATH for GStreamer
+        shell: pwsh
+        run: |
+          echo "PKG_CONFIG_PATH=C:\gstreamer\1.0\msvc_x86_64\lib\pkgconfig" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # ---------------------------------------------------------------
+      # 5. Ninja — саме цей генератор реально використовує Qt Creator
+      #    локально (підтверджено з CMakeCache.txt: CMAKE_GENERATOR=Ninja),
+      #    а не Visual Studio solution-генератор
+      # ---------------------------------------------------------------
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+        with:
+          # Звірено з Qt Maintenance Tool → Qt for Development → Build Tools
+          version: "1.12.1"
+
+      # ---------------------------------------------------------------
+      # 6. NSIS для збирання інсталятора
+      # ---------------------------------------------------------------
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+
+      # ---------------------------------------------------------------
+      # 7. Кеш CPM-залежностей (SDL3, GeographicLib, shapelib, ulog_cpp,
+      #    ArduPilotParams тощо) — окремо від build/, яка щоразу
+      #    створюється з нуля. Ключ прив'язаний до вмісту CMake-файлів:
+      #    якщо змінюються версії/джерела залежностей — кеш інвалідується
+      #    автоматично; restore-keys дозволяють частково перевикористати
+      #    кеш навіть при частковій зміні.
+      # ---------------------------------------------------------------
+      - name: Cache CPM source cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('**/CMakeLists.txt', '**/cmake/**', '**/*.cmake') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-
+
+      # ---------------------------------------------------------------
+      # 8. CMake configure + build + install
+      #    (той самий процес, що і локально в Qt Creator — звірено з
+      #    реальним CMakeCache.txt, включно з генератором Ninja)
+      # ---------------------------------------------------------------
+      - name: Configure (CMake)
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}" `
+            -DQT_QMAKE_EXECUTABLE="${{ env.Qt6_DIR }}\bin\qmake.exe"
+          # CMAKE_PROJECT_INCLUDE_BEFORE (auto-setup.cmake з .qtc) навмисно
+          # НЕ передається — це internal-механізм Qt Creator для менеджера
+          # пакетів IDE, у CI-збірці він не потрібен і не існує.
+          #
+          # install-qt-action експортує env-змінну Qt6_DIR (корінь Qt,
+          # напр. C:\Qt\6.8.3\msvc2022_64) — саме її і використовуємо
+          # замість жорстко зашитого шляху локальної машини.
+
+      - name: Build
+        shell: pwsh
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+      - name: Install (stage for packaging)
+        shell: pwsh
+        run: cmake --install build --config ${{ env.BUILD_TYPE }}
+
+      # ---------------------------------------------------------------
+      # 9. Пакування інсталятора через CPack (NSIS-генератор)
+      #    ВАЖЛИВО: QGroundControl/LumiereQGC не має статичного .nsi
+      #    файлу в репозиторії — CMakeLists.txt підключає модуль
+      #    cmake/install/CPack, який сам налаштовує CPACK_GENERATOR=NSIS
+      #    і генерує .nsi-скрипт автоматично в build-директорії під час
+      #    пакування. Тому прямий виклик makensis тут не потрібен і не
+      #    правильний — викликаємо ціль "package", яку створює CPack.
+      # ---------------------------------------------------------------
+      - name: Build installer package (CPack/NSIS)
+        shell: pwsh
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --target package
+
+      # ---------------------------------------------------------------
+      # 10. Публікація артефакту (поки без підпису)
+      # ---------------------------------------------------------------
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LumiereQGC-Windows-Setup
+          path: |
+            build/LumiereQGC*.exe
+          if-no-files-found: error
+          # ПРИМІТКА: CPack сам визначає назву файлу з CPACK_PACKAGE_FILE_NAME
+          # (зазвичай щось на кшталт LumiereQGC-<версія>-win64.exe, БЕЗ слова
+          # "Setup" — це не наша NSIS-конфігурація, а дефолтний шаблон CPack).
+          # Якщо перший прогін впаде на цьому кроці з "no files found" —
+          # подивись у лозі попереднього кроку (package), яку саме назву і
+          # шлях видав CPack, і онови патерн тут.
