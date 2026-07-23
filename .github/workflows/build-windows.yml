@@ -45,13 +45,17 @@ jobs:
           # Повний список звірено зі скріншотів Qt Maintenance Tool
           # (Qt 6.8.3 → MSVC 2022 64-bit → Additional Libraries, все, що
           # позначено галочкою).
+          # ВИПРАВЛЕНО (перший CI-прогін): "qtstatemachine" не існує в
+          # реєстрі aqt — правильна назва цього модуля qtscxml (за
+          # технологією SCXML, не за назвою в UI Qt Maintenance Tool).
+          # Помилка CI була: "packages ['qtstatemachine'] were not found"
           modules: >-
             qtactiveqt qt3d qt5compat qtcharts qtconnectivity qtdatavis3d
             qtgraphs qthttpserver qtimageformats qtlanguageserver qtlocation
             qtlottie qtmultimedia qtnetworkauth qtpositioning qtgrpc
             qtquick3d qtquick3dphysics qtquicktimeline qtremoteobjects
             qtsensors qtserialbus qtserialport qtshadertools qtspeech
-            qtstatemachine qtvirtualkeyboard qtwebchannel qtwebsockets
+            qtscxml qtvirtualkeyboard qtwebchannel qtwebsockets
             qtwebview
           cache: true
 
