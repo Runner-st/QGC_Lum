@@ -116,8 +116,13 @@ jobs:
       - name: Install GStreamer (runtime + devel)
         shell: pwsh
         run: |
-          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-runtime.msi" /quiet /norestart INSTALLDIR="C:\gstreamer\1.0\msvc_x86_64"' -Wait
-          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-devel.msi" /quiet /norestart INSTALLDIR="C:\gstreamer\1.0\msvc_x86_64"' -Wait
+          # ВИПРАВЛЕНО: MSI сам додає піддиректорію "1.0\msvc_x86_64" під
+          # INSTALLDIR — якщо передати сюди вже готовий C:\gstreamer\1.0\
+          # msvc_x86_64, файли ляжуть у подвійно вкладений шлях
+          # C:\gstreamer\1.0\msvc_x86_64\1.0\msvc_x86_64\ (підтверджено
+          # діагностичним кроком нижче). Тому INSTALLDIR = лише корінь.
+          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-runtime.msi" /quiet /norestart INSTALLDIR="C:\gstreamer"' -Wait
+          Start-Process msiexec.exe -ArgumentList '/i "C:\gst-installers\gst-devel.msi" /quiet /norestart INSTALLDIR="C:\gstreamer"' -Wait
           echo "C:\gstreamer\1.0\msvc_x86_64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "GSTREAMER_1_0_ROOT_MSVC_X86_64=C:\gstreamer\1.0\msvc_x86_64\" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
