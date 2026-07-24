@@ -31,6 +31,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+          fetch-tags: true
 
       # ---------------------------------------------------------------
       # 2. Qt 6.8.3 (MSVC) через кешований install-qt-action
@@ -253,18 +254,36 @@ jobs:
         run: cmake --build build --config ${{ env.BUILD_TYPE }} --target package
 
       # ---------------------------------------------------------------
+      # 9.1 Перейменування готового інсталятора з версією з git describe
+      #     (та сама команда, яку CMake викликає для QGC_APP_VERSION_STR,
+      #     тож назва файлу і версія "About" в самій програмі завжди
+      #     збігаються — за умови що fetch-tags/fetch-depth дають повну
+      #     історію, див. крок Checkout вище).
+      # ---------------------------------------------------------------
+      - name: Rename installer with version
+        id: version
+        shell: pwsh
+        run: |
+          $version = git describe --tags
+          Write-Host "Resolved version: $version"
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          $installer = Get-ChildItem -Path "build" -Filter "LumiereQGC*.exe" | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "No LumiereQGC*.exe found in build/ to rename"
+            exit 1
+          }
+          $newName = "LumiereQGC-$version-x64-Setup.exe"
+          Rename-Item -Path $installer.FullName -NewName $newName
+          Write-Host "Renamed $($installer.Name) -> $newName"
+
+      # ---------------------------------------------------------------
       # 10. Публікація артефакту (поки без підпису)
       # ---------------------------------------------------------------
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LumiereQGC-Windows-Setup
+          name: LumiereQGC-${{ steps.version.outputs.version }}-Windows-Setup
           path: |
-            build/LumiereQGC*.exe
+            build/LumiereQGC-*-x64-Setup.exe
           if-no-files-found: error
-          # ПРИМІТКА: CPack сам визначає назву файлу з CPACK_PACKAGE_FILE_NAME
-          # (зазвичай щось на кшталт LumiereQGC-<версія>-win64.exe, БЕЗ слова
-          # "Setup" — це не наша NSIS-конфігурація, а дефолтний шаблон CPack).
-          # Якщо перший прогін впаде на цьому кроці з "no files found" —
-          # подивись у лозі попереднього кроку (package), яку саме назву і
-          # шлях видав CPack, і онови патерн тут.
