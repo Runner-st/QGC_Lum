@@ -4,10 +4,34 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mavlink/QGroundControl/releases">
-    <img src="https://img.shields.io/github/release/mavlink/QGroundControl.svg" alt="Latest Release">
+  <a href="https://github.com/Runner-st/QGC_Lum/releases">
+    <img src="https://img.shields.io/github/v/release/Runner-st/QGC_Lum" alt="Latest Release">
   </a>
 </p>
+
+---
+
+### 🍃 About LumiereQGC
+
+**LumiereQGC** is a customized fork of [QGroundControl](https://github.com/mavlink/qgroundcontrol) (QGC), the
+open-source Ground Control Station for MAVLink-enabled UAVs. This fork is **not affiliated with or endorsed by**
+the upstream QGroundControl project.
+
+What's customized in this fork compared to stock QGroundControl:
+
+- **Custom branding and icons** — distinct app identity (name, icon, installer branding) so it's clearly
+  distinguishable from stock QGroundControl on a user's machine.
+- **Feature/hardware tailoring** — adjustments to video streaming and telemetry handling aimed at a specific
+  UAV fleet and ground equipment setup, rather than the general-purpose hardware support upstream targets.
+
+Windows installers for this fork are published on this repository's
+[**Releases**](https://github.com/Runner-st/QGC_Lum/releases) page and are built via GitHub Actions CI directly
+from this repository's source.
+
+For anything not specific to this fork — general QGC usage, flight control concepts, mission planning — the
+upstream documentation below still applies. Please report issues specific to this fork here, not upstream.
+
+---
 
 *QGroundControl* (QGC) is a highly intuitive and powerful Ground Control Station (GCS) designed for UAVs. Whether you're a first-time pilot or an experienced professional, QGC provides a seamless user experience for flight control and mission planning, making it the go-to solution for any *MAVLink-enabled drone*.
 
@@ -50,6 +74,7 @@ QGroundControl is *open-source*, meaning you have the power to shape it! Whether
 - 💬 [Discussion & Support](https://docs.qgroundcontrol.com/en/Support/Support.html)
 - 🤝 [Contributing](https://dev.qgroundcontrol.com/en/contribute/)
 - 📜 [License Information](https://github.com/mavlink/qgroundcontrol/blob/master/.github/COPYING.md)
+- 📦 [LumiereQGC Releases (this fork)](https://github.com/Runner-st/QGC_Lum/releases)
 
 ---
 
