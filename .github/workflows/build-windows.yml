@@ -9,6 +9,12 @@ on:
   push:
     tags: [ 'v*' ]
 
+# Потрібно для кроку "Publish GitHub Release" нижче — стандартний
+# GITHUB_TOKEN за замовчуванням має лише read-доступ до вмісту репо,
+# для створення релізу й завантаження файлу-артефакту треба write.
+permissions:
+  contents: write
+
 env:
   QT_VERSION: "6.8.3"
   GST_VERSION: "1.24.13"
@@ -288,3 +294,23 @@ jobs:
           path: |
             build/LumiereQGC-*-x64-Setup.exe
           if-no-files-found: error
+
+      # ---------------------------------------------------------------
+      # 11. Публікація GitHub Release (тільки коли workflow запущено
+      #     через push тегу — при ручному workflow_dispatch тегу немає,
+      #     і цей крок просто пропускається).
+      # ---------------------------------------------------------------
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/LumiereQGC-*-x64-Setup.exe
+          # Автоматично генерує список змін з комітів між тегами.
+          generate_release_notes: true
+          # Заголовок релізу — сам тег (напр. v5.0.6.168).
+          name: ${{ github.ref_name }}
+          # git describe додає "-N-gHASH", якщо поточний коміт НЕ точно
+          # на тегу (є коміти зверху) — тобто версія міститиме дефіс.
+          # Точний тег без дефіса → повний реліз; з дефісом →
+          # проміжна/dev-збірка, позначаємо як pre-release.
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
