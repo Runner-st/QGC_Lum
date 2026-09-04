@@ -36,9 +36,14 @@ Item {
 
         VehicleSummaryRow {
             labelText: qsTr("Arming Checks:")
-            valueText: fact ? (fact.value & 1 ? qsTr("Enabled") : qsTr("Some disabled")) : ""
+            // ARMING_CHECK bit 0 set means all checks enabled. ARMING_SKIPCHK == 0 means nothing skipped.
+            valueText: _armingCheck ?
+                           (_armingCheck.value & 1 ? qsTr("Enabled") : qsTr("Some disabled")) :
+                           (_armingSkipCheck ? (_armingSkipCheck.value == 0 ? qsTr("Enabled") : qsTr("Some disabled")) : "")
 
-            property Fact fact: controller.getParameterFact(-1, "ARMING_CHECK")
+            // ArduPilot 4.7+ replaced ARMING_CHECK with ARMING_SKIPCHK (inverted semantics).
+            property Fact _armingCheck:     controller.getParameterFact(-1, "ARMING_CHECK", false /* reportMissing */)
+            property Fact _armingSkipCheck: controller.getParameterFact(-1, "ARMING_SKIPCHK", false /* reportMissing */)
         }
 
         VehicleSummaryRow {
@@ -139,7 +144,7 @@ Item {
             valueText:  fact ? (fact.value == 0 ? qsTr("current") : fact.valueString + " " + fact.units) : ""
             visible:    controller.vehicle.multiRotor
 
-            property Fact fact: controller.getParameterFact(-1, "RTL_ALT", false /* reportMissing */)
+            property Fact fact: controller.getParameterFact(-1, "r.RTL_ALT_M", false /* reportMissing */)
         }
 
         VehicleSummaryRow {

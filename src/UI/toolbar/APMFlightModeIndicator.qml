@@ -32,7 +32,7 @@ FlightModeIndicator {
             Layout.fillWidth:   true
             heading:            qsTr("Return to Launch")
 
-            property Fact rtlAltFact: controller.getParameterFact(-1, "RTL_ALT")
+            property Fact rtlAltFact: controller.getParameterFact(-1, "r.RTL_ALT_M")
 
             FactPanelController { id: controller }
 

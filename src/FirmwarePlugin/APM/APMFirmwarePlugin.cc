@@ -932,17 +932,30 @@ void APMFirmwarePlugin::guidedModeChangeAltitude(Vehicle *vehicle, double altitu
     }
 }
 
+// ArduPilot 4.7 renamed WPNAV_SPEED (cm/s) to WP_SPD (m/s). Which unit applies is decided from the
+// parameter the vehicle actually exposes rather than from the reported firmware version, since the
+// version is still unknown early in the connection and would select the wrong scale factor.
+static const char *const kWaypointSpeedParamSI       = "WP_SPD";         // 4.7 and later, m/s
+static const char *const kWaypointSpeedParamLegacy   = "WPNAV_SPEED";    // 4.6 and earlier, cm/s
+
 bool APMFirmwarePlugin::mulirotorSpeedLimitsAvailable(Vehicle *vehicle) const
 {
-    return vehicle->parameterManager()->parameterExists(ParameterManager::defaultComponentId, "WPNAV_SPEED");
+    ParameterManager *const paramMgr = vehicle->parameterManager();
+
+    return paramMgr->parameterExists(ParameterManager::defaultComponentId, kWaypointSpeedParamSI) ||
+           paramMgr->parameterExists(ParameterManager::defaultComponentId, kWaypointSpeedParamLegacy);
 }
 
 double APMFirmwarePlugin::maximumHorizontalSpeedMultirotor(Vehicle *vehicle) const
 {
-    const QString speedParam("WPNAV_SPEED");
+    ParameterManager *const paramMgr = vehicle->parameterManager();
 
-    if (vehicle->parameterManager()->parameterExists(ParameterManager::defaultComponentId, speedParam)) {
-        return vehicle->parameterManager()->getParameter(ParameterManager::defaultComponentId, speedParam)->rawValue().toDouble() * 0.01;  // note cm/s -> m/s
+    if (paramMgr->parameterExists(ParameterManager::defaultComponentId, kWaypointSpeedParamSI)) {
+        return paramMgr->getParameter(ParameterManager::defaultComponentId, kWaypointSpeedParamSI)->rawValue().toDouble();
+    }
+
+    if (paramMgr->parameterExists(ParameterManager::defaultComponentId, kWaypointSpeedParamLegacy)) {
+        return paramMgr->getParameter(ParameterManager::defaultComponentId, kWaypointSpeedParamLegacy)->rawValue().toDouble() * 0.01;  // cm/s -> m/s
     }
 
     return FirmwarePlugin::maximumHorizontalSpeedMultirotor(vehicle);
@@ -1007,11 +1020,17 @@ void APMFirmwarePlugin::guidedModeChangeHeading(Vehicle *vehicle, const QGeoCoor
 double APMFirmwarePlugin::minimumTakeoffAltitudeMeters(Vehicle* vehicle) const
 {
     double minTakeoffAlt = 0;
-    const QString takeoffAltParam(vehicle->vtol() ? QStringLiteral("Q_RTL_ALT") : QStringLiteral("PILOT_TKOFF_ALT"));
-    const float paramDivisor = vehicle->vtol() ? 1.0 : 100.0; // PILOT_TAKEOFF_ALT is in centimeters
+    ParameterManager *const paramMgr = vehicle->parameterManager();
 
-    if (vehicle->parameterManager()->parameterExists(ParameterManager::defaultComponentId, takeoffAltParam)) {
-        minTakeoffAlt = vehicle->parameterManager()->getParameter(ParameterManager::defaultComponentId, takeoffAltParam)->rawValue().toDouble() / static_cast<double>(paramDivisor);
+    // ArduPilot 4.7 renamed PILOT_TKOFF_ALT (cm) to PILOT_TKO_ALT_M (m). As with the waypoint speed
+    // above, the unit follows the parameter the vehicle exposes, not its reported version.
+    // Q_RTL_ALT is in meters on every version.
+    const QString takeoffAltParam(vehicle->vtol() ? QStringLiteral("Q_RTL_ALT") : QStringLiteral("PILOT_TKO_ALT_M"));
+
+    if (paramMgr->parameterExists(ParameterManager::defaultComponentId, takeoffAltParam)) {
+        minTakeoffAlt = paramMgr->getParameter(ParameterManager::defaultComponentId, takeoffAltParam)->rawValue().toDouble();
+    } else if (!vehicle->vtol() && paramMgr->parameterExists(ParameterManager::defaultComponentId, "PILOT_TKOFF_ALT")) {
+        minTakeoffAlt = paramMgr->getParameter(ParameterManager::defaultComponentId, "PILOT_TKOFF_ALT")->rawValue().toDouble() / 100.0; // cm -> m
     }
 
     if (minTakeoffAlt == 0) {

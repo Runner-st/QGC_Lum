@@ -33,14 +33,19 @@ Item {
     property Fact _failsafeBatteryVoltage:       controller.getParameterFact(-1, "r.BATT_LOW_VOLT", false)
     property Fact _failsafeBatteryCapacity:      controller.getParameterFact(-1, "r.BATT_LOW_MAH", false)
 
-    property Fact _armingCheck: controller.getParameterFact(-1, "ARMING_CHECK")
+    // ArduPilot 4.7+ replaced ARMING_CHECK with ARMING_SKIPCHK (inverted semantics).
+    property Fact _armingCheck:     controller.getParameterFact(-1, "ARMING_CHECK", false /* reportMissing */)
+    property Fact _armingSkipCheck: controller.getParameterFact(-1, "ARMING_SKIPCHK", false /* reportMissing */)
 
     Column {
         anchors.fill:       parent
 
         VehicleSummaryRow {
             labelText: qsTr("Arming Checks:")
-            valueText:  _armingCheck.value & 1 ? qsTr("Enabled") : qsTr("Some disabled")
+            // ARMING_CHECK bit 0 set means all checks enabled. ARMING_SKIPCHK == 0 means nothing skipped.
+            valueText:  _armingCheck ?
+                            (_armingCheck.value & 1 ? qsTr("Enabled") : qsTr("Some disabled")) :
+                            (_armingSkipCheck ? (_armingSkipCheck.value == 0 ? qsTr("Enabled") : qsTr("Some disabled")) : "")
         }
         VehicleSummaryRow {
             labelText: qsTr("GCS failsafe:")
