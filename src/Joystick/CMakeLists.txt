@@ -34,7 +34,7 @@ endif()
 CPMAddPackage(
     NAME sdl_gamecontrollerdb
     GITHUB_REPOSITORY mdqinc/SDL_GameControllerDB
-    GIT_TAG 8cf75556e0ba4b024837a16eaf2b352f729cf3b3 # master @ 2026-09-04, pinned
+    GIT_TAG 22a98f6339abf4b6ca6cb061443a70e4f7ab252d # master @ 2026-10-27, pinned. Upstream force-pushes master: check that a new SHA is on master before you pin it
     DOWNLOAD_ONLY
 )
 
