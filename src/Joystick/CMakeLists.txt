@@ -34,7 +34,7 @@ endif()
 CPMAddPackage(
     NAME sdl_gamecontrollerdb
     GITHUB_REPOSITORY mdqinc/SDL_GameControllerDB
-    GIT_TAG master
+    GIT_TAG 8cf75556e0ba4b024837a16eaf2b352f729cf3b3 # master @ 2026-09-04, pinned
     DOWNLOAD_ONLY
 )
 
