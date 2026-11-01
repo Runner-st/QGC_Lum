@@ -223,9 +223,14 @@ jobs:
         run: |
           cmake -S . -B build -G "Ninja" `
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
-            -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}" `
-            -DQT_QMAKE_EXECUTABLE="${{ env.Qt6_DIR }}\bin\qmake.exe" `
+            -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}" `
+            -DQT_QMAKE_EXECUTABLE="${{ env.QT_ROOT_DIR }}\bin\qmake.exe" `
+            -DPATCH_EXECUTABLE="C:/Program Files/Git/usr/bin/patch.exe" `
             -DGSTREAMER_1_0_ROOT_MSVC_X86_64="C:\gstreamer\1.0\msvc_x86_64\"
+          # PATCH_EXECUTABLE: CPM (cmake/modules/CPM.cmake) бере перший
+          # patch.exe з PATH. На runner це C:\Strawberry\c\bin\patch.exe
+          # (GNU patch 2.5.9), який падає з "Assertion failed: hunk" на
+          # патчах з LF. Тому явно задаємо сучасний patch з Git for Windows.
           # GSTREAMER_1_0_ROOT_MSVC_X86_64 передається і як env var (з
           # кроку Install GStreamer), і тепер явно як -D — деякі кастомні
           # Find-модулі перевіряють лише CMake cache variable, а не ENV,
@@ -235,8 +240,9 @@ jobs:
           # НЕ передається — це internal-механізм Qt Creator для менеджера
           # пакетів IDE, у CI-збірці він не потрібен і не існує.
           #
-          # install-qt-action експортує env-змінну Qt6_DIR (корінь Qt,
-          # напр. C:\Qt\6.8.3\msvc2022_64) — саме її і використовуємо
+          # install-qt-action@v4 експортує env-змінну QT_ROOT_DIR (корінь Qt,
+          # напр. D:\a\QGC_Lum\Qt\6.8.3\msvc2022_64). Qt6_DIR v4 НЕ задає —
+          # через це раніше CMAKE_PREFIX_PATH був порожнім. Використовуємо QT_ROOT_DIR
           # замість жорстко зашитого шляху локальної машини.
 
       - name: Build
