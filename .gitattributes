@@ -9,6 +9,7 @@
 *.ps1           text eol=crlf
 *.bat           text eol=crlf
 *.cmd           text eol=crlf
+*.patch         text eol=lf
 
 # ──────────────────────────────────────────────────────────────
 # 2. Mark certain filetypes explicitly as binary
