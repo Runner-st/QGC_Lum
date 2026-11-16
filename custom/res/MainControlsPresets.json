@@ -1,12 +1,12 @@
 {
     "buttons": [
-        { "name": "Розкласти", "channel": 8, "pulse": 1000 },
+        { "name": "Розкласти щоглу", "channel": 8, "pulse": 1000 },
         { "name": "Cam ON",    "channel": 9, "pulse": 2000 },
         { "name": "Cam OFF",   "channel": 9, "pulse": 1000 }
     ],
     "mode": [
-        { "name": "AUTO",   "channel": 12, "pulse": 1500 },
-        { "name": "MANUAL", "channel": 12, "pulse": 2000 },
-        { "name": "SAFE",   "channel": 12, "pulse": 1000 }
+        { "name": "Авто режим",   "channel": 12, "pulse": 1500 },
+        { "name": "Ручне", "channel": 12, "pulse": 2000 },
+        { "name": "Безпечний режим",   "channel": 12, "pulse": 1000 }
     ]
 }

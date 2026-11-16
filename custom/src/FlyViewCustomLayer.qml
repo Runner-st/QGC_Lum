@@ -94,6 +94,27 @@ Item {
         QGroundControl.corePlugin.triggerServoCommand(channel, pulseWidth)
     }
 
+    // Same font as QGCComboBox, to measure option texts.
+    FontMetrics {
+        id: comboFontMetrics
+        font.family:    ScreenTools.normalFontFamily
+        font.pointSize: ScreenTools.defaultFontPointSize
+    }
+
+    // Width for a combo box so that its widest option text fits (labels come
+    // from the preset JSON files and can be long). Minimum is 12 characters.
+    // leftPadding/rightPadding of QGCComboBox already include the arrow.
+    function _comboWidthFor(combo, options) {
+        var textWidth = 0
+        if (options) {
+            for (var i = 0; i < options.length; i++) {
+                textWidth = Math.max(textWidth, comboFontMetrics.advanceWidth(String(options[i])))
+            }
+        }
+        var needed = Math.ceil(textWidth) + combo.leftPadding + combo.rightPadding + ScreenTools.defaultFontPixelWidth
+        return Math.max(ScreenTools.defaultFontPixelWidth * 12, needed)
+    }
+
     // ---- Main controls mode drop-down (AUTO / MANUAL / SAFE on CH12) ----
     // After the link is activated the drop-down shows AUTO and is locked.
     // It unlocks kModeUnlockDelayMs after the first heartbeat (activeVehicle)
@@ -263,7 +284,7 @@ Item {
             QGCComboBox {
                 id: modeCombo
                 visible: _modeOptionCount > 0
-                width: ScreenTools.defaultFontPixelWidth * 12
+                width: _comboWidthFor(modeCombo, model)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _modeUnlocked && _hasVehicle && _hasCorePlugin
                 model: servoButtonsColumn._modeNamesKey.length > 0 ? servoButtonsColumn._modeNamesKey.split("\n") : []
@@ -303,7 +324,7 @@ Item {
             QGCComboBox {
                 id: deviceCombo
                 visible: _rdcActive
-                width: ScreenTools.defaultFontPixelWidth * 12
+                width: _comboWidthFor(deviceCombo, model)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _hasVehicle && _hasCorePlugin
 
