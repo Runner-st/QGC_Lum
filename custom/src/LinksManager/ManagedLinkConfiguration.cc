@@ -12,6 +12,8 @@
 #include "CameraStreamConfiguration.h"
 #include "ServoButtonConfiguration.h"
 
+#include <QtCore/QDebug>
+#include <QtCore/QFile>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 
@@ -91,18 +93,119 @@ void ManagedLinkConfiguration::setMainControlsEnabled(bool enabled)
     }
 }
 
+namespace {
+
+constexpr const char *kMainControlsPresetsResource = ":/res/MainControlsPresets.json";
+
+// Used only if the JSON resource is missing or invalid. CMake checks the JSON
+// at configure time, so in a normal build this list is not used.
+QVector<ManagedLinkConfiguration::MainControlPreset> defaultMainControlsPresets()
+{
+    return {
+        { QStringLiteral(u"Розкласти"), 8, 1000, false }, // Розкласти
+        { QStringLiteral("Cam ON"),  9,  2000, false },
+        { QStringLiteral("Cam OFF"), 9,  1000, false },
+        // Mode drop-down options, in menu order. The first one (AUTO) is the default.
+        { QStringLiteral("AUTO"),    12, 1500, true  },
+        { QStringLiteral("MANUAL"),  12, 2000, true  },
+        { QStringLiteral("SAFE"),    12, 1000, true  }
+    };
+}
+
+// Appends the items of one JSON array. Returns false if an item is invalid.
+bool appendPresetGroup(const QJsonArray &arr, bool isMode, QVector<ManagedLinkConfiguration::MainControlPreset> &out)
+{
+    for (const QJsonValue &val : arr) {
+        const QJsonObject obj = val.toObject();
+        const QString name = obj.value(QStringLiteral("name")).toString();
+        const int channel  = obj.value(QStringLiteral("channel")).toInt(-1);
+        const int pulse    = obj.value(QStringLiteral("pulse")).toInt(-1);
+        if (name.isEmpty() || channel < 1 || channel > 18 || pulse < 0 || pulse > 3000) {
+            return false;
+        }
+        out.append({ name, channel, pulse, isMode });
+    }
+    return true;
+}
+
+QVector<ManagedLinkConfiguration::MainControlPreset> loadMainControlsPresets()
+{
+    QFile file(QString::fromLatin1(kMainControlsPresetsResource));
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "MainControlsPresets: cannot open" << kMainControlsPresetsResource << "- using built-in defaults";
+        return defaultMainControlsPresets();
+    }
+
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "MainControlsPresets: invalid JSON:" << err.errorString() << "- using built-in defaults";
+        return defaultMainControlsPresets();
+    }
+
+    const QJsonObject root = doc.object();
+    QVector<ManagedLinkConfiguration::MainControlPreset> presets;
+    const QJsonArray modeArr = root.value(QStringLiteral("mode")).toArray();
+    if (modeArr.isEmpty() ||
+        !appendPresetGroup(root.value(QStringLiteral("buttons")).toArray(), false, presets) ||
+        !appendPresetGroup(modeArr, true, presets)) {
+        qWarning() << "MainControlsPresets: invalid item in" << kMainControlsPresetsResource << "- using built-in defaults";
+        return defaultMainControlsPresets();
+    }
+    return presets;
+}
+
+constexpr const char *kRemoteDeviceControlPresetsResource = ":/res/RemoteDeviceControlPresets.json";
+
+QVariantMap loadRemoteDeviceControlLabels()
+{
+    // Built-in defaults. CMake checks the JSON at configure time, so in a
+    // normal build every key comes from the JSON.
+    QVariantMap labels {
+        { QStringLiteral("txOn"),     QStringLiteral("TX ON") },
+        { QStringLiteral("txOff"),    QStringLiteral("TX OFF") },
+        { QStringLiteral("noDevice"), QStringLiteral(u"Не обрано") }, // Не обрано
+        { QStringLiteral("init"),     QStringLiteral("Init") },
+        { QStringLiteral("activate"), QStringLiteral("Activate") }
+    };
+
+    QFile file(QString::fromLatin1(kRemoteDeviceControlPresetsResource));
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "RemoteDeviceControlPresets: cannot open" << kRemoteDeviceControlPresetsResource << "- using built-in defaults";
+        return labels;
+    }
+
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "RemoteDeviceControlPresets: invalid JSON:" << err.errorString() << "- using built-in defaults";
+        return labels;
+    }
+
+    const QJsonObject root = doc.object();
+    for (auto it = labels.begin(); it != labels.end(); ++it) {
+        const QString value = root.value(it.key()).toString();
+        if (value.isEmpty()) {
+            qWarning() << "RemoteDeviceControlPresets: missing or empty key" << it.key() << "- using built-in default";
+        } else {
+            it.value() = value;
+        }
+    }
+    return labels;
+}
+
+} // namespace
+
 const QVector<ManagedLinkConfiguration::MainControlPreset>& ManagedLinkConfiguration::mainControlsPresets()
 {
-    static const QVector<MainControlPreset> presets = {
-        { "\xD0\xA0\xD0\xBE\xD0\xB7\xD0\xBA\xD0\xBB\xD0\xB0\xD1\x81\xD1\x82\xD0\xB8", 8,  1000, false }, // Розкласти
-        { "Cam ON",                                                                   9,  2000, false },
-        { "Cam OFF",                                                                  9,  1000, false },
-        // Mode drop-down options, in menu order. The first one (AUTO) is the default.
-        { "AUTO",                                                                     12, 1500, true  },
-        { "MANUAL",                                                                   12, 2000, true  },
-        { "SAFE",                                                                     12, 1000, true  }
-    };
+    static const QVector<MainControlPreset> presets = loadMainControlsPresets();
     return presets;
+}
+
+const QVariantMap& ManagedLinkConfiguration::remoteDeviceControlLabels()
+{
+    static const QVariantMap labels = loadRemoteDeviceControlLabels();
+    return labels;
 }
 
 QVariantList ManagedLinkConfiguration::mainControlsPresetList() const
@@ -110,7 +213,7 @@ QVariantList ManagedLinkConfiguration::mainControlsPresetList() const
     QVariantList out;
     for (const MainControlPreset &p : mainControlsPresets()) {
         QVariantMap m;
-        m["name"] = QString::fromUtf8(p.name);
+        m["name"] = p.name;
         m["channel"] = p.channel;
         m["pulseWidth"] = p.pulseWidth;
         m["isMode"] = p.isMode;

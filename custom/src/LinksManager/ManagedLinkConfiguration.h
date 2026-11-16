@@ -14,6 +14,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QSettings>
 #include <QtCore/QVariantList>
+#include <QtCore/QVariantMap>
 #include <QtCore/QVector>
 
 #include "CameraConfiguration.h"
@@ -65,12 +66,18 @@ public:
     void setMainControlsEnabled(bool enabled);
 
     struct MainControlPreset {
-        const char* name;
+        QString name;
         int channel;
         int pulseWidth;
         bool isMode;    // true: option of the mode drop-down (AUTO/MANUAL/SAFE), not a button
     };
+    // Loaded once from :/res/MainControlsPresets.json (custom/res/MainControlsPresets.json).
+    // Falls back to built-in defaults if the resource is missing or invalid.
     static const QVector<MainControlPreset>& mainControlsPresets();
+
+    // Remote device control labels, loaded once from :/res/RemoteDeviceControlPresets.json.
+    // Keys: txOn, txOff, noDevice, init, activate. A missing/invalid key uses its built-in default.
+    static const QVariantMap& remoteDeviceControlLabels();
 
     Q_INVOKABLE QVariantList mainControlsPresetList() const;
     Q_INVOKABLE bool isMainControlsPreset(int channel, int pulseWidth) const;

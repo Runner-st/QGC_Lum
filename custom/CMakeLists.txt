@@ -1,5 +1,12 @@
 message(STATUS "QGC: Adding Custom Plugin")
 
+# Servo presets are defined in JSON files in res/ (compiled in via custom.qrc).
+#   MainControlsPresets.json        - Main controls buttons + mode drop-down
+#   RemoteDeviceControlPresets.json - Remote device control labels
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePresetJson.cmake)
+qgc_validate_main_controls_presets(${CMAKE_CURRENT_SOURCE_DIR}/res/MainControlsPresets.json)
+qgc_validate_remote_device_control_presets(${CMAKE_CURRENT_SOURCE_DIR}/res/RemoteDeviceControlPresets.json)
+
 list(APPEND CUSTOM_RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/custom.qrc
 )

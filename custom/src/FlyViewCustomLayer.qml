@@ -52,6 +52,11 @@ Item {
     readonly property int _rdcPower:  _rdc ? (_rdc.powerContact      | 0) : 0
     readonly property int _rdcSelect: _rdc ? (_rdc.selectionContact  | 0) : 0
     readonly property int _rdcAct:    _rdc ? (_rdc.activationContact | 0) : 0
+    // Labels from custom/res/RemoteDeviceControlPresets.json (via C++).
+    readonly property var _rdcLabels: _rdc && _rdc.labels ? _rdc.labels : ({})
+    // A string, so deviceCombo._options (which resets the selection) is rebuilt
+    // only when the label text really changes, not on each new labels object.
+    readonly property string _rdcNoDeviceLabel: _rdcLabels.noDevice || ""
 
     // Debug logging function
     function debugWidgetState() {
@@ -279,7 +284,7 @@ Item {
 
             QGCButton {
                 visible: _rdcActive
-                text: qsTr("TX ON")
+                text: _rdcLabels.txOn || ""
                 width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _hasVehicle && _hasCorePlugin
@@ -288,7 +293,7 @@ Item {
 
             QGCButton {
                 visible: _rdcActive
-                text: qsTr("TX OFF")
+                text: _rdcLabels.txOff || ""
                 width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _hasVehicle && _hasCorePlugin
@@ -303,7 +308,7 @@ Item {
                 enabled: _hasVehicle && _hasCorePlugin
 
                 readonly property var _options: {
-                    var opts = [qsTr("\u041D\u0435 \u043E\u0431\u0440\u0430\u043D\u043E")]
+                    var opts = [_rdcNoDeviceLabel]
                     for (var i = 1; i <= _rdcN; i++) opts.push(String(i))
                     return opts
                 }
@@ -341,7 +346,7 @@ Item {
 
             QGCButton {
                 visible: _rdcActive
-                text: qsTr("Init")
+                text: _rdcLabels.init || ""
                 width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _hasVehicle && _hasCorePlugin
@@ -350,7 +355,7 @@ Item {
 
             QGCButton {
                 visible: _rdcActive
-                text: qsTr("Activate")
+                text: _rdcLabels.activate || ""
                 width: Math.max(ScreenTools.defaultFontPixelWidth * 4, implicitWidth)
                 height: ScreenTools.defaultFontPixelHeight * 2
                 enabled: _hasVehicle && _hasCorePlugin

@@ -461,7 +461,7 @@ void LinksManagerController::_updateActiveServoButtons()
     if (_activeLink && _activeLink->mainControlsEnabled()) {
         for (const auto &p : ManagedLinkConfiguration::mainControlsPresets()) {
             QVariantMap map;
-            map["name"] = QString::fromUtf8(p.name);
+            map["name"] = p.name;
             map["channel"] = p.channel;
             map["pulse"] = p.pulseWidth;
             map["isPreset"] = true;
@@ -479,6 +479,7 @@ void LinksManagerController::_updateActiveServoButtons()
         rdc["deviceCount"]       = _activeLink->deviceCount();
         rdc["selectionContact"]  = _activeLink->selectionContact();
         rdc["activationContact"] = _activeLink->activationContact();
+        rdc["labels"]            = ManagedLinkConfiguration::remoteDeviceControlLabels();
     } else {
         rdc["enabled"] = false;
     }

@@ -89,6 +89,18 @@ Rectangle {
         return false
     }
 
+    // Unique preset channels, sorted, e.g. "8, 9, 12" (from MainControlsPresets.json).
+    function _presetChannelsText() {
+        if (!linkConfig) return ""
+        var presets = linkConfig.mainControlsPresetList()
+        var chans = []
+        for (var i = 0; i < presets.length; i++) {
+            if (chans.indexOf(presets[i].channel) < 0) chans.push(presets[i].channel)
+        }
+        chans.sort(function(a, b) { return a - b })
+        return chans.join(", ")
+    }
+
     function _conflictIndices() {
         var out = []
         if (!linkConfig || !linkConfig.servoButtons) return out
@@ -188,7 +200,7 @@ Rectangle {
             visible: _rdcMainConflict
             color: "red"
             wrapMode: Text.WordWrap
-            text: qsTr("Remote device control channels/pulses conflict with the Main controls preset (channels 8, 9, 12). Adjust the Remote device control fields or disable one of the two.")
+            text: qsTr("Remote device control channels/pulses conflict with the Main controls preset (channels %1). Adjust the Remote device control fields or disable one of the two.").arg(_presetChannelsText())
         }
 
         // Add/Edit form
