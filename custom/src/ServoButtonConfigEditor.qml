@@ -274,8 +274,9 @@ Rectangle {
             }
         }
 
-        // Main controls preset toggle: virtual preset group of 5 buttons that
-        // shows in the main Fly view when enabled (never stored in servoButtons).
+        // Main controls preset toggle: virtual preset group (3 buttons + the
+        // AUTO/MANUAL/SAFE mode drop-down on CH12) that shows in the main Fly
+        // view when enabled (never stored in servoButtons).
         QGCCheckBox {
             id: mainControlsCheck
             text: qsTr("Add main controls")

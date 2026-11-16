@@ -465,6 +465,7 @@ void LinksManagerController::_updateActiveServoButtons()
             map["channel"] = p.channel;
             map["pulse"] = p.pulseWidth;
             map["isPreset"] = true;
+            map["isMode"] = p.isMode;
             _activeServoButtons.append(map);
         }
     }

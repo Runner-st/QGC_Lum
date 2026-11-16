@@ -68,6 +68,7 @@ public:
         const char* name;
         int channel;
         int pulseWidth;
+        bool isMode;    // true: option of the mode drop-down (AUTO/MANUAL/SAFE), not a button
     };
     static const QVector<MainControlPreset>& mainControlsPresets();
 

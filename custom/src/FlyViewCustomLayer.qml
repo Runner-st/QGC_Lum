@@ -33,6 +33,9 @@ Item {
         console.log("FlyViewCustomLayer loaded")
         console.log("_hasCorePlugin:", _hasCorePlugin)
         console.log("_linksManager:", _linksManager)
+        // on_XxxChanged handlers do not fire for initial values: start the
+        // mode countdown here if the link and vehicle already exist.
+        _maybeStartModeTimer()
     }
 
     readonly property real _margin: ScreenTools.defaultFontPixelWidth
@@ -86,6 +89,93 @@ Item {
         QGroundControl.corePlugin.triggerServoCommand(channel, pulseWidth)
     }
 
+    // ---- Main controls mode drop-down (AUTO / MANUAL / SAFE on CH12) ----
+    // After the link is activated the drop-down shows AUTO and is locked.
+    // It unlocks kModeUnlockDelayMs after the first heartbeat (activeVehicle)
+    // and sends the default option (AUTO) at that moment.
+    // If the vehicle is lost and comes back while the same link stays active,
+    // the current option is sent again at once and the drop-down stays unlocked.
+    readonly property int kModeUnlockDelayMs: 120000
+    readonly property var _modeOptions: servoButtonsColumn._modeOptions
+    readonly property int _modeOptionCount: _modeOptions.length
+    readonly property var _activeLinkObj: _hasActiveLink ? _linksManager.activeLink : null
+    property int  _modeIndex: 0
+    property bool _modeUnlocked: false
+    property bool _modeTimerStarted: false
+
+    function _sendCurrentMode() {
+        if (_modeIndex < 0 || _modeIndex >= _modeOptions.length) return
+        var opt = _modeOptions[_modeIndex]
+        _triggerServo(opt.channel, opt.pulse)
+    }
+
+    function _maybeStartModeTimer() {
+        if (_hasVehicle && _hasActiveLink && _modeOptionCount > 0 && !_modeTimerStarted) {
+            _modeTimerStarted = true
+            modeUnlockTimer.start()
+        }
+    }
+
+    function _resetModeState() {
+        modeUnlockTimer.stop()
+        modeResendTimer.stop()
+        _modeUnlocked = false
+        _modeTimerStarted = false
+        _modeIndex = 0
+        _maybeStartModeTimer()
+    }
+
+    on_ActiveLinkObjChanged: _resetModeState()
+    on_ModeOptionCountChanged: _resetModeState()
+
+    on_HasVehicleChanged: {
+        if (!_hasVehicle) {
+            modeResendTimer.stop()
+            return
+        }
+        if (_modeUnlocked) {
+            modeResendTimer.restart()
+        } else {
+            _maybeStartModeTimer()
+        }
+    }
+
+    // A short loss of communication does not remove the Vehicle object
+    // (_hasVehicle stays true). QGC only sets communicationLost. When the
+    // communication comes back, send the current option again, because an
+    // option selected during the loss did not reach the vehicle.
+    readonly property var  _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    readonly property bool _commLost: _activeVehicle && _activeVehicle.vehicleLinkManager
+                                      ? _activeVehicle.vehicleLinkManager.communicationLost : false
+
+    on_CommLostChanged: {
+        if (_commLost) {
+            modeResendTimer.stop()
+        } else if (_hasVehicle && _modeUnlocked) {
+            modeResendTimer.restart()
+        }
+    }
+
+    Timer {
+        id: modeUnlockTimer
+        interval: kModeUnlockDelayMs
+        repeat: false
+        // On unlock, send the default option (AUTO). If no vehicle is present
+        // now, _triggerServo does nothing and the resend on reconnect sends it.
+        onTriggered: {
+            _modeUnlocked = true
+            _sendCurrentMode()
+        }
+    }
+
+    // Short delay so the new Vehicle object can take commands after the heartbeat.
+    Timer {
+        id: modeResendTimer
+        interval: 1000
+        repeat: false
+        onTriggered: _sendCurrentMode()
+    }
+
     QGCToolInsets {
         id: toolInsets
         leftEdgeTopInset: parentToolInsets.leftEdgeTopInset
@@ -120,7 +210,11 @@ Item {
 
         readonly property var _activeButtons: _hasActiveLink ? _linksManager.activeServoButtons : []
         readonly property var _userButtons: _activeButtons.filter(function(b) { return !b.isPreset })
-        readonly property var _presetButtons: _activeButtons.filter(function(b) { return b.isPreset })
+        readonly property var _presetButtons: _activeButtons.filter(function(b) { return b.isPreset && !b.isMode })
+        readonly property var _modeOptions: _activeButtons.filter(function(b) { return b.isPreset && b.isMode })
+        // String key: changes only when the option names change, so the combo
+        // model is not reset each time activeServoButtons is re-emitted.
+        readonly property string _modeNamesKey: _modeOptions.map(function(o) { return o.name }).join("\n")
 
         Flow {
             id: userButtonsFlow
@@ -161,8 +255,23 @@ Item {
                 }
             }
 
+            QGCComboBox {
+                id: modeCombo
+                visible: _modeOptionCount > 0
+                width: ScreenTools.defaultFontPixelWidth * 12
+                height: ScreenTools.defaultFontPixelHeight * 2
+                enabled: _modeUnlocked && _hasVehicle && _hasCorePlugin
+                model: servoButtonsColumn._modeNamesKey.length > 0 ? servoButtonsColumn._modeNamesKey.split("\n") : []
+                currentIndex: _modeIndex
+
+                onActivated: (index) => {
+                    _modeIndex = index
+                    _sendCurrentMode()
+                }
+            }
+
             Rectangle {
-                visible: _rdcActive && presetButtonRepeater.count > 0
+                visible: _rdcActive && (presetButtonRepeater.count > 0 || _modeOptionCount > 0)
                 width: 1
                 height: ScreenTools.defaultFontPixelHeight * 2
                 color: qgcPal.groupBorder

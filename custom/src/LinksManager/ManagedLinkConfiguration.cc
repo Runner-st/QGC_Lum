@@ -94,11 +94,13 @@ void ManagedLinkConfiguration::setMainControlsEnabled(bool enabled)
 const QVector<ManagedLinkConfiguration::MainControlPreset>& ManagedLinkConfiguration::mainControlsPresets()
 {
     static const QVector<MainControlPreset> presets = {
-        { "\xD0\xA0\xD0\xBE\xD0\xB7\xD0\xBA\xD0\xBB\xD0\xB0\xD1\x81\xD1\x82\xD0\xB8", 8,  1000 }, // Розкласти
-        { "Cam ON",                                                                   9,  2000 },
-        { "Cam OFF",                                                                  9,  1000 },
-        { "\xD0\xA0\xD1\x83\xD1\x87\xD0\xBD\xD0\xB8\xD0\xB9",                         12, 2000 }, // Ручний
-        { "\xD0\x92\xD1\x96\xD0\xB4\xD0\xBC\xD1\x96\xD0\xBD\xD0\xB0",                 12, 1000 }  // Відміна
+        { "\xD0\xA0\xD0\xBE\xD0\xB7\xD0\xBA\xD0\xBB\xD0\xB0\xD1\x81\xD1\x82\xD0\xB8", 8,  1000, false }, // Розкласти
+        { "Cam ON",                                                                   9,  2000, false },
+        { "Cam OFF",                                                                  9,  1000, false },
+        // Mode drop-down options, in menu order. The first one (AUTO) is the default.
+        { "AUTO",                                                                     12, 1500, true  },
+        { "MANUAL",                                                                   12, 2000, true  },
+        { "SAFE",                                                                     12, 1000, true  }
     };
     return presets;
 }
@@ -111,6 +113,7 @@ QVariantList ManagedLinkConfiguration::mainControlsPresetList() const
         m["name"] = QString::fromUtf8(p.name);
         m["channel"] = p.channel;
         m["pulseWidth"] = p.pulseWidth;
+        m["isMode"] = p.isMode;
         out.append(m);
     }
     return out;
