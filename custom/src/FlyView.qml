@@ -84,6 +84,11 @@ Item {
         function onAcknowledgementMessageReceived(text) {
             mainWindow.showMessageDialog(qsTr("Flight Controller"), text, Dialog.Ok)
         }
+
+        // Plain STATUSTEXT (no dialog) that starts/cancels the countdown.
+        function onTextMessageReceived(sysid, componentid, severity, text, description) {
+            countdownOverlay.handleMessage(text)
+        }
     }
 
     QGCToolInsets {
@@ -220,5 +225,12 @@ Item {
         function onActivationTriggered(value) {
             _root.utmspSendActTrigger = value
         }
+    }
+
+    // Countdown started/cancelled by flight controller status text messages.
+    CustomFlight.CountdownOverlay {
+        id:             countdownOverlay
+        anchors.fill:   parent
+        z:              QGroundControl.zOrderTopMost
     }
 }
