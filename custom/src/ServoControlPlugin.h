@@ -17,6 +17,7 @@
 #include "LinksManager/LinksManagerController.h"
 #include "Camera/C12Controller.h"
 #include "Camera/TopotekController.h"
+#include "MicAudio/MicAudioController.h"
 
 class QQmlApplicationEngine;
 
@@ -37,6 +38,7 @@ class ServoControlPlugin : public QGCCorePlugin
     Q_PROPERTY(LinksManagerController* linksManager READ linksManager CONSTANT)
     Q_PROPERTY(C12Controller* c12Controller READ c12Controller CONSTANT)
     Q_PROPERTY(TopotekController* topotekController READ topotekController CONSTANT)
+    Q_PROPERTY(MicAudioController* micAudio READ micAudio CONSTANT)
 
 public:
     explicit ServoControlPlugin(QObject *parent = nullptr);
@@ -48,6 +50,7 @@ public:
     LinksManagerController* linksManager() const { return _linksManager; }
     C12Controller* c12Controller() const { return _c12Controller; }
     TopotekController* topotekController() const { return _topotekController; }
+    MicAudioController* micAudio() const { return _micAudio; }
 
     Q_INVOKABLE void addServoButton(const QString &name, int channel, int pulseWidth);
     Q_INVOKABLE void updateServoButton(int index, const QString &name, int channel, int pulseWidth);
@@ -86,4 +89,5 @@ private:
     LinksManagerController *_linksManager = nullptr;
     C12Controller *_c12Controller = nullptr;
     TopotekController *_topotekController = nullptr;
+    MicAudioController *_micAudio = nullptr;
 };

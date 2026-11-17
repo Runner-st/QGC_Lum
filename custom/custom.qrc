@@ -15,6 +15,9 @@
         <file alias="QGroundControl/FlightDisplay/CountdownOverlay.qml">src/CountdownOverlay.qml</file>
         <file alias="QGroundControl/FlightDisplay/C12CameraWidget.qml">src/C12CameraWidget.qml</file>
         <file alias="QGroundControl/FlightDisplay/TopotekCameraWidget.qml">src/TopotekCameraWidget.qml</file>
+        <file alias="QGroundControl/FlightDisplay/MicAudioWidget.qml">src/MicAudioWidget.qml</file>
+        <file alias="QGroundControl/FlightDisplay/MicTuningPanel.qml">src/MicTuningPanel.qml</file>
+        <file alias="QGroundControl/AppSettings/MicAudioSettings.qml">src/MicAudioSettings.qml</file>
     </qresource>
 	<qresource prefix="/res">
           <file alias="SplashScreen">res/SplashScreen.png</file>

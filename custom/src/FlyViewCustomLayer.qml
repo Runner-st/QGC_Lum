@@ -13,6 +13,7 @@ import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
+import "qrc:/Custom/qml/QGroundControl/FlightDisplay" as CustomFlight
 
 Item {
     id: root
@@ -211,7 +212,7 @@ Item {
         rightEdgeCenterInset: Math.max(parentToolInsets.rightEdgeCenterInset, cameraWidgetContainer.visible ? cameraWidgetContainer.width + _margin : 0)
         rightEdgeBottomInset: parentToolInsets.rightEdgeBottomInset
         topEdgeLeftInset: parentToolInsets.topEdgeLeftInset
-        topEdgeCenterInset: parentToolInsets.topEdgeCenterInset
+        topEdgeCenterInset: Math.max(parentToolInsets.topEdgeCenterInset, micWidget.visible ? micWidget.height + (_margin * 2) : 0)
         topEdgeRightInset: parentToolInsets.topEdgeRightInset
         bottomEdgeLeftInset: Math.max(parentToolInsets.bottomEdgeLeftInset, servoButtonsColumn.visible ? servoButtonsColumn.implicitHeight + (_margin * 2) : 0)
         bottomEdgeCenterInset: parentToolInsets.bottomEdgeCenterInset
@@ -383,6 +384,19 @@ Item {
                 onClicked: _triggerServo(_rdcAct, 2000)
             }
         }
+    }
+
+    // Mic-box bar at the top center. Always shown; grey until the first
+    // heartbeat (same enable rule as the servo buttons).
+    CustomFlight.MicAudioWidget {
+        id: micWidget
+        anchors.top: parent.top
+        anchors.topMargin: _margin
+        anchors.horizontalCenter: parent.horizontalCenter
+        z: QGroundControl.zOrderWidgets
+        visible: _hasCorePlugin && QGroundControl.corePlugin.micAudio !== undefined
+        micAudio: _hasCorePlugin ? QGroundControl.corePlugin.micAudio : null
+        controlsEnabled: _hasVehicle && _hasCorePlugin
     }
 
     // Camera Widget Container - holds both C12 and Topotek widgets

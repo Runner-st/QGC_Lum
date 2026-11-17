@@ -63,6 +63,13 @@ ListModel {
     }
 
     ListElement {
+        name: qsTr("Mic Audio")
+        url: "qrc:/Custom/qml/QGroundControl/AppSettings/MicAudioSettings.qml"
+        iconUrl: "qrc:/InstrumentValueIcons/mic.svg"
+        pageVisible: function() { return true }
+    }
+
+    ListElement {
         name: qsTr("Comm Links")
         url: "qrc:/qml/QGroundControl/AppSettings/LinkSettings.qml"
         iconUrl: "qrc:/InstrumentValueIcons/usb.svg"

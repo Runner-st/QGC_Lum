@@ -63,6 +63,9 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     connect(_linksManager, &LinksManagerController::activeLinkChanged,
             this, &ServoControlPlugin::_updateTopotekControlAddress);
 
+    // Mic-box audio: host comes from the active link
+    _micAudio = new MicAudioController(_linksManager, this);
+
     // Register QML types for Links Manager
     qmlRegisterUncreatableType<LinksManagerController>(
         "QGroundControl.LinksManager", 1, 0,
@@ -89,6 +92,11 @@ ServoControlPlugin::ServoControlPlugin(QObject *parent)
     qmlRegisterUncreatableType<TopotekController>(
         "QGroundControl.TopotekCamera", 1, 0,
         "TopotekController", "Reference only");
+
+    // Register MicAudioController QML type (for the State enum)
+    qmlRegisterUncreatableType<MicAudioController>(
+        "QGroundControl.MicAudio", 1, 0,
+        "MicAudioController", "Reference only");
 }
 
 ServoControlPlugin::~ServoControlPlugin()

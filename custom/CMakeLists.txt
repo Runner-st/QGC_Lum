@@ -29,6 +29,12 @@ set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/CameraStreamConfiguration.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ServoButtonConfiguration.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager/ServoButtonConfiguration.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicAudioController.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicAudioController.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicAudioPlayer.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicAudioPlayer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicTuningClient.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio/MicTuningClient.h
     CACHE INTERNAL "" FORCE
 )
 
@@ -42,6 +48,7 @@ set(CUSTOM_INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Camera
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LinksManager
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MicAudio
     CACHE INTERNAL "" FORCE
 )
 
